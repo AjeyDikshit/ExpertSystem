@@ -297,6 +297,13 @@ def inv_parkstransform(t: list, va: list, vb: list, vc: list, w: float, gamma: f
     return [fdqo[0], fdqo[1], fdqo[2]]
 
 def sequencetransform(t: list, va: list, vb: list, vc: list):
+    """
+    :param t:
+    :param va:
+    :param vb:
+    :param vc:
+    :return: 3 arrays corresponding to positive, negative, zero sequence respectively
+    """
     a = np.exp(2 * np.pi * 1j / 3)
     mat = [[1, 1, 1],
            [a ** 2, a, 1],
@@ -307,7 +314,7 @@ def sequencetransform(t: list, va: list, vb: list, vc: list):
     for i in range(len(t)):
         for k in range(np.shape(fpno)[0]):
             fpno[k][i] = np.dot(B, [[va[i]], [vb[i]], [vc[i]]])[k]
-    return [np.real(fpno[0]), np.real(fpno[1]), np.real(fpno[2])]
+    return [fpno[0], fpno[1], fpno[2]]
 
 # -------------------------------------------------------------------------------
 
