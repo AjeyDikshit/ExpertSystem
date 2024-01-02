@@ -17,7 +17,7 @@ import PPF as ppf
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        uic.loadUi('form_scribble.ui', self)
+        uic.loadUi('Trial_UI_V2.ui', self)
 
         # Variables -----------------------------------------------------
         self.dir_path = None
@@ -50,10 +50,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.CB_current_negative.stateChanged.connect(lambda: self.plot_signal(self.CB_current_negative))
         self.CB_current_zero.stateChanged.connect(lambda: self.plot_signal(self.CB_current_zero))
 
+        self.list_of_files_2.activated.connect(self.load_list_widget)
+
         # Default settings
         self.plot_widget1.showGrid(x=True, y=True, alpha=1)
         self.plot_widget2.showGrid(x=True, y=True, alpha=1)
         self.groupBox.setEnabled(False)
+
+    def load_list_widget(self):
+        self.listWidget.clear()
+        try:
+            self.listWidget.addItems(list(self.all_files[self.list_of_files_2.currentText() + '.cfg'].columns))
+        except KeyError as err:
+            self.listWidget.addItems(list(self.all_files[self.list_of_files_2.currentText() + '.CFG'].columns))
 
     def get_folder(self):
         dlg = QtWidgets.QFileDialog(self)
@@ -71,6 +80,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     count += 1
 
         self.list_of_files.addItems([''] + [x[:-4] for x in self.file_names])
+        self.list_of_files_2.addItems([''] + [x[:-4] for x in self.file_names])
         self.load_all_files()
 
     def load_all_files(self):
@@ -78,6 +88,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.all_files[file] = self.load_dataframe(file)
             self.shift_values[file] = [0, 0]
 
+        print(self.all_files.keys())
         self.groupBox.setEnabled(True)
 
     def plot_derivatives(self):
