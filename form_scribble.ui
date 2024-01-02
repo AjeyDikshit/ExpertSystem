@@ -66,6 +66,12 @@
       <height>371</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
     <property name="title">
      <string>Options:</string>
     </property>
@@ -184,7 +190,7 @@
      <property name="checked">
       <bool>false</bool>
      </property>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>-40</x>
@@ -333,7 +339,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_2">
+          <widget class="QCheckBox" name="CB_voltage_rms">
            <property name="text">
             <string>Voltage (RMS)</string>
            </property>
@@ -353,7 +359,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_5">
+          <widget class="QCheckBox" name="CB_current_rms">
            <property name="text">
             <string>Current (RMS)</string>
            </property>
@@ -650,7 +656,7 @@
      <string>Plot</string>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>60</x>

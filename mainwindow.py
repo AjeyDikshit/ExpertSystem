@@ -34,9 +34,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.list_of_files.activated.connect(self.show_description)
         self.plot_button.clicked.connect(self.plot_signal)
 
+        self.plotting_general_options.clicked.connect(lambda: self.toggle_options(self.plotting_general_options))
+        self.plotting_power_options.clicked.connect(lambda: self.toggle_options(self.plotting_power_options))
+        self.plotting_pn0_options.clicked.connect(lambda: self.toggle_options(self.plotting_pn0_options))
+
         # Default setting
         self.plot_widget1.showGrid(x=True, y=True, alpha=1)
         self.plot_widget2.showGrid(x=True, y=True, alpha=1)
+        self.groupBox.setEnabled(False)
 
     def get_folder(self):
         dlg = QtWidgets.QFileDialog(self)
@@ -56,10 +61,10 @@ class MainWindow(QtWidgets.QMainWindow):
         print(self.file_names)
         print(self.color_dict)
         self.list_of_files.addItems([''] + [x[:-4] for x in self.file_names])
-        self.plot_all_files()
+        self.load_all_files()
         # self.plot_derivatives()
 
-    def plot_all_files(self):
+    def load_all_files(self):
         for file in self.file_names:
             self.all_files[file] = self.load_dataframe(file)
             self.shift_values[file] = [0, 0]
@@ -70,6 +75,8 @@ class MainWindow(QtWidgets.QMainWindow):
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
             self.plot1_signals(self.all_files[file])
 
+        self.groupBox.setEnabled(True)
+
     def plot_derivatives(self):
         self.plot_widget2.addLegend()
         for file in self.file_names:
@@ -78,7 +85,7 @@ class MainWindow(QtWidgets.QMainWindow):
             derivative = ppf.derivative(np.array(self.all_files[file]['Time']), np.array(self.all_files[file]['calculated_voltage']))
             self.plot_widget2.plot(self.all_files[file]['Time'], abs(derivative/max(derivative)), pen=pen, name=name)
 
-    def load_dataframe(self, file):
+    def load_dataframe(self, file: str) -> pd.DataFrame:
         com = Comtrade()
         com.load(file)
 
@@ -88,16 +95,31 @@ class MainWindow(QtWidgets.QMainWindow):
         df.insert(0, 'Time', com.time)
         if com.channels_count == 123:
             print("L-90 relay")
-            df['RMS'] = ppf.instaLL_RMSVoltage(df['Time'], df.iloc[:, 5], df.iloc[:, 6], df.iloc[:, 7])
+            df['RMS_voltage'] = ppf.instaLL_RMSVoltage(df['Time'], df.iloc[:, 5], df.iloc[:, 6], df.iloc[:, 7])
+            df['RMS_current'] = ppf.insta_RMSCurrent(df['Time'], df.iloc[:, 1], df.iloc[:, 2], df.iloc[:, 3])
+            df["Real power"], df['Reactive power'] = ppf.instant_power(df.iloc[:, 5], df.iloc[:, 6], df.iloc[:, 7],
+                                                                       df.iloc[:, 1], df.iloc[:, 2], df.iloc[:, 3])
+
         if com.channels_count == 95:
             print("ABB relay")
-            df['RMS'] = ppf.instaLL_RMSVoltage(df['Time'], df['LINE PT R-Ph'], df['LINE PT Y-Ph'], df['LINE PT B-Ph'])
+            df['RMS_voltage'] = ppf.instaLL_RMSVoltage(df['Time'], df['LINE PT R-Ph'], df['LINE PT Y-Ph'], df['LINE PT B-Ph'])
+            df['RMS_current'] = ppf.insta_RMSCurrent(df["Time"], df['LINE CT R-Ph'], df['LINE CT Y-Ph'], df['LINE CT B-Ph'])
+            df['Real power'], df['Reactive power'] = ppf.instant_power(df['LINE PT R-Ph'], df['LINE PT Y-Ph'], df['LINE PT B-Ph'],
+                                                                       df['LINE CT R-Ph'], df['LINE CT Y-Ph'], df['LINE CT B-Ph'])
+
         if com.channels_count == 80:
             print("Micom relay")
-            df['RMS'] = ppf.instaLL_RMSVoltage(df['Time'], df['VA'], df['VB'], df['VC'])
+            df['RMS_voltage'] = ppf.instaLL_RMSVoltage(df['Time'], df['VA'], df['VB'], df['VC'])
+            df['RMS_current'] = ppf.insta_RMSCurrent(df["Time"], df['IA'], df['IB'], df['IC'])
+            df['Real power'], df['Reactive power'] = ppf.instant_power(df['VA'], df['VB'], df['VC'],
+                                                                       df['IA'], df['IB'], df['IC'])
+
         if com.channels_count == 40:
             print("Unknown relay")
-            df['RMS'] = ppf.instaLL_RMSVoltage(df['Time'], df['VA'], df['VB'], df['VC'])
+            df['RMS_voltage'] = ppf.instaLL_RMSVoltage(df['Time'], df['VA'], df['VB'], df['VC'])
+            df['RMS_current'] = ppf.insta_RMSCurrent(df["Time"], df['IA'], df['IB'], df['IC'])
+            df['Real power'], df['Reactive power'] = ppf.instant_power(df['VA'], df['VB'], df['VC'],
+                                                                       df['IA'], df['IB'], df['IC'])
 
         print("done")
         return df
@@ -134,16 +156,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def plot_signal(self):
         if self.plotting_general_options.isChecked():
-            if self.CB__power.isChecked():
-                self.short_description.setText("Real Power")
-            elif self.CB_reactive_power.isChecked():
-                self.short_description.setText("Reactive Power")
+            if self.CB_voltage_rms.isChecked():
+                self.plot_rms_voltage()
+            elif self.CB_current_rms.isChecked():
+                self.plot_rms_current()
 
         if self.plotting_power_options.isChecked():
             if self.CB_real_power.isChecked():
-                self.short_description.setText("Real Power")
+                self.plot_real_power()
             elif self.CB_reactive_power.isChecked():
-                self.short_description.setText("Reactive Power")
+                self.plot_reactive_power()
 
         if self.plotting_pn0_options.isChecked():
             if self.CB_voltage_positive.isChecked():
@@ -159,6 +181,70 @@ class MainWindow(QtWidgets.QMainWindow):
             elif self.CB_current_zero.isChecked():
                 self.short_description.setText("Zero current")
 
+    def set_checkboxes_unchecked(self):
+        for edit in self.groupBox.parentWidget().findChildren(QtWidgets.QCheckBox):
+            edit.setChecked(False)
+
+    def toggle_options(self, group_box):
+        if group_box.title() == 'General:':
+            if self.plotting_general_options.isChecked():
+                self.set_checkboxes_unchecked()
+                self.plotting_power_options.setEnabled(False)
+                self.plotting_pn0_options.setEnabled(False)
+            else:
+                self.plotting_power_options.setEnabled(True)
+                self.plotting_pn0_options.setEnabled(True)
+
+        elif group_box.title() == 'Power:':
+            if self.plotting_power_options.isChecked():
+                self.set_checkboxes_unchecked()
+                self.plotting_general_options.setEnabled(False)
+                self.plotting_pn0_options.setEnabled(False)
+            else:
+                self.plotting_general_options.setEnabled(True)
+                self.plotting_pn0_options.setEnabled(True)
+
+        elif group_box.title() == 'Positive, Negative, Zero sequence:':
+            if self.plotting_pn0_options.isChecked():
+                self.set_checkboxes_unchecked()
+                self.plotting_power_options.setEnabled(False)
+                self.plotting_general_options.setEnabled(False)
+            else:
+                self.plotting_power_options.setEnabled(True)
+                self.plotting_general_options.setEnabled(True)
+
+    # Plotting functions:
+    def plot_real_power(self):
+        self.plot_widget1.clear()
+        self.plot_widget1.addLegend()
+        for file in self.file_names:
+            name = file[:-4]
+            pen = pg.mkPen(color=self.color_dict[file], width=1.5)
+            self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['Real power'], pen=pen, name=name)
+
+    def plot_reactive_power(self):
+        self.plot_widget1.clear()
+        self.plot_widget1.addLegend()
+        for file in self.file_names:
+            name = file[:-4]
+            pen = pg.mkPen(color=self.color_dict[file], width=1.5)
+            self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['Reactive power'], pen=pen, name=name)
+
+    def plot_rms_voltage(self):
+        self.plot_widget1.clear()
+        self.plot_widget1.addLegend()
+        for file in self.file_names:
+            name = file[:-4]
+            pen = pg.mkPen(color=self.color_dict[file], width=1.5)
+            self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['RMS_voltage'], pen=pen, name=name)
+
+    def plot_rms_current(self):
+        self.plot_widget1.clear()
+        self.plot_widget1.addLegend()
+        for file in self.file_names:
+            name = file[:-4]
+            pen = pg.mkPen(color=self.color_dict[file], width=1.5)
+            self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['RMS_current'], pen=pen, name=name)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
