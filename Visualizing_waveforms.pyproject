@@ -1,3 +1,3 @@
 {
-    "files": ["mainwindow.py", "form.ui", "PPF.py", "form_scribble.ui", "Trial_UI_V2.py", "Trial_UI_V2.ui"]
+    "files": ["mainwindow.py", "form.ui", "PPF.py", "form_scribble.ui", "Trial_UI_V2.py", "Trial_UI_V2.ui", "question.png"]
 }
