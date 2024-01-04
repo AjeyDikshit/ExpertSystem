@@ -15,6 +15,7 @@ import time
 from comtrade import Comtrade
 import PPF as ppf
 
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -78,14 +79,23 @@ class MainWindow(QtWidgets.QMainWindow):
     def get_file(self):
         dlg = QtWidgets.QFileDialog(self)
         # self.file_path = dlg.getOpenFileName(self, 'Choose directory', r'C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\Comtrade Data')[0]
-        self.file_path = dlg.getOpenFileName(self, 'Choose directory', r"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\Comtrade data\A1Q07DP1202311084f.cfg")[0]
+        self.file_path = dlg.getOpenFileName(self, 'Choose directory',
+                                             r"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\Comtrade data\A1Q07DP1202311084f.cfg")[
+            0]
         self.LE_file_path.setText(self.file_path)
+
+        filename = self.LE_file_path.text().split('/')[-1]
+        # print(filename)
+        if self.LE_file_path.text().endswith("A1Q07DP1202311084f.cfg"):
+            print("hello")
+            self.LW_voltage_set.addItems(["LINE PT R-Ph", "LINE PT Y-Ph", "LINE PT B-Ph"])
+            self.LW_current_set.addItems(["LINE CT R-Ph", "LINE CT Y-Ph", "LINE CT B-Ph"])
 
         self.com.load(self.file_path)
         self.LW_attribute_list.clear()
         self.LW_attribute_list.addItems(self.com.analog_channel_ids)
-        self.LW_voltage_set.clear()
-        self.LW_current_set.clear()
+        # self.LW_voltage_set.clear()
+        # self.LW_current_set.clear()
 
     def move_to_voltage(self):
         item = self.LW_attribute_list.currentItem().text()
@@ -139,25 +149,39 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(self.LW_voltage_set.count()):
             if i % 3 == 0:
                 count += 1
-                df_dict[f'Va{count}'] = self.com.analog[self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
+                df_dict[f'Va{count}'] = self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
             if i % 3 == 1:
-                df_dict[f'Vb{count}'] = self.com.analog[self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
+                df_dict[f'Vb{count}'] = self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
             if i % 3 == 2:
-                df_dict[f'Vc{count}'] = self.com.analog[self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
+                df_dict[f'Vc{count}'] = self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
+
+        for i in range(count):
+            df_dict[f'RMS_voltage {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Va{i + 1}'],
+                                                                     df_dict[f'Vb{i + 1}'], df_dict[f'Vc{i + 1}'])
 
         count = 0
         for i in range(self.LW_current_set.count()):
             if i % 3 == 0:
                 count += 1
-                df_dict[f'Ia{count}'] = self.com.analog[self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
+                df_dict[f'Ia{count}'] = self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
             if i % 3 == 1:
-                df_dict[f'Ib{count}'] = self.com.analog[self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
+                df_dict[f'Ib{count}'] = self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
             if i % 3 == 2:
-                df_dict[f'Ic{count}'] = self.com.analog[self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
+                df_dict[f'Ic{count}'] = self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
+
+        for i in range(count):
+            df_dict[f'RMS_current {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Ia{i + 1}'],
+                                                                     df_dict[f'Ib{i + 1}'], df_dict[f'Ic{i + 1}'])
 
         df = pd.DataFrame(df_dict)
 
-        # For power calculations:
+        # For derived quantities calculations:
         power_input = list(eval(self.LE_power_selection.text()))
         try:
             if int(power_input[0]):
@@ -167,8 +191,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     va, vb, vc = df[f'Va{power_input[0]}'], df[f'Vb{power_input[0]}'], df[f'Vc{power_input[0]}']
                     ia, ib, ic = df[f'Ia{power_input[1]}'], df[f'Ib{power_input[1]}'], df[f'Ic{power_input[1]}']
 
-                    df['RMS_voltage'] = ppf.instaLL_RMSVoltage(df['Time'], va, vb, vc)  # TODO: Move this line 147, and calculate for all sets of voltages
-                    df['RMS_current'] = ppf.insta_RMSCurrent(df['Time'], ia, ib, ic)  # TODO: Move this line 147, and calculate for all sets of currents
                     df["Real power"], df['Reactive power'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
 
                     va_dft = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
@@ -198,18 +220,17 @@ class MainWindow(QtWidgets.QMainWindow):
                                                       "File loaded successfully, you can add more files/proceed to plotting")
                 except KeyError as err:
                     QtWidgets.QMessageBox.information(self,
-                                                      "Error", "Didn't obtain correct number of values, please check your input lists")
+                                                      "Error",
+                                                      "Didn't obtain correct number of values, please check your input lists")
         except TypeError as e:
             for _ in range(len(power_input)):
-                # if power_input[0] > number_of_voltage_sets or power_input[1] > number_of_current_sets:
-                #     QtWidgets.QMessageBox.information(self, "Error", "Please input proper values for power calculation")
                 try:
-                    va, vb, vc = df[f'Va{power_input[_][0]}'], df[f'Vb{power_input[_][0]}'], df[f'Vc{power_input[_][0]}']
-                    ia, ib, ic = df[f'Ia{power_input[_][1]}'], df[f'Ib{power_input[_][1]}'], df[f'Ic{power_input[_][1]}']
+                    va, vb, vc = df[f'Va{power_input[_][0]}'], df[f'Vb{power_input[_][0]}'], df[
+                        f'Vc{power_input[_][0]}']
+                    ia, ib, ic = df[f'Ia{power_input[_][1]}'], df[f'Ib{power_input[_][1]}'], df[
+                        f'Ic{power_input[_][1]}']
 
-                    df['RMS_voltage'] = ppf.instaLL_RMSVoltage(df['Time'], va, vb, vc)
-                    df[f'RMS_current {_+1}'] = ppf.insta_RMSCurrent(df['Time'], ia, ib, ic)
-                    df[f"Real power {_+1}"], df[f'Reactive power {_+1}'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
+                    df[f"Real power {_ + 1}"], df[f'Reactive power {_ + 1}'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
 
                     va_dft = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
                     vb_dft = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
@@ -218,9 +239,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     ib_dft = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
                     ic_dft = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
 
-                    df[f'Positive sequence V {_+1}'], df[f'Negative sequence V {_+1}'], df[f'Zero sequence V {_+1}'] = ppf.sequencetransform(
+                    df[f'Positive sequence V {_ + 1}'], df[f'Negative sequence V {_ + 1}'], df[
+                        f'Zero sequence V {_ + 1}'] = ppf.sequencetransform(
                         df['Time'], va_dft, vb_dft, vc_dft)
-                    df[f'Positive sequence I {_+1}'], df[f'Negative sequence I {_+1}'], df[f'Zero sequence I {_+1}'] = ppf.sequencetransform(
+                    df[f'Positive sequence I {_ + 1}'], df[f'Negative sequence I {_ + 1}'], df[
+                        f'Zero sequence I {_ + 1}'] = ppf.sequencetransform(
                         df['Time'], ia_dft, ib_dft, ic_dft)
 
                 except KeyError as err:
@@ -243,58 +266,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "File loaded successfully, you can add more files/proceed to plotting")
         print(df.columns)
 
-    # def load_all_files(self):
-    #     for file in self.file_names:
-    #         self.all_files[file] = self.load_dataframe(file)
-    #         self.shift_values[file] = [0, 0]
-    #
-    #     print(self.all_files.keys())
-    #     self.groupBox.setEnabled(True)
-    #
-    # def load_dataframe(self, file: str) -> pd.DataFrame:
-    #     com = Comtrade()
-    #     com.load(file)
-    #
-    #     self.description[file[:-4]] = com.cfg_summary()
-    #
-    #     df = pd.DataFrame(com.analog, index=com.analog_channel_ids).transpose()
-    #     df.insert(0, 'Time', com.time)
-    #
-    #     if com.channels_count == 123:
-    #         va, vb, vc = df.iloc[:, 5], df.iloc[:, 6], df.iloc[:, 7]
-    #         ia, ib, ic = df.iloc[:, 1], df.iloc[:, 2], df.iloc[:, 3]
-    #
-    #     if com.channels_count == 95:
-    #         va, vb, vc = df['LINE PT R-Ph'], df['LINE PT Y-Ph'], df['LINE PT B-Ph']
-    #         ia, ib, ic = df['LINE CT R-Ph'], df['LINE CT Y-Ph'], df['LINE CT B-Ph']
-    #
-    #     if com.channels_count == 80 or com.channels_count == 40:
-    #         va, vb, vc = df['VA'], df["VB"], df["VC"]
-    #         ia, ib, ic = df['IA'], df["IB"], df["IC"]
-    #
-    #     df['RMS_voltage'] = ppf.instaLL_RMSVoltage(df['Time'], va, vb, vc)
-    #     df['RMS_current'] = ppf.insta_RMSCurrent(df['Time'], ia, ib, ic)
-    #     df["Real power"], df['Reactive power'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
-    #
-    #     va_dft = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
-    #     vb_dft = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
-    #     vc_dft = ppf.window_phasor(np.array(vc), np.array(df['Time']), 1, 1)[0]
-    #     ia_dft = ppf.window_phasor(np.array(ia), np.array(df['Time']), 1, 1)[0]
-    #     ib_dft = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
-    #     ic_dft = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
-    #
-    #     df['Positive sequence V'], df['Negative sequence V'], df['Zero sequence V'] = ppf.sequencetransform(
-    #         df['Time'], va_dft, vb_dft, vc_dft)
-    #     df['Positive sequence I'], df['Negative sequence I'], df['Zero sequence I'] = ppf.sequencetransform(
-    #         df['Time'], ia_dft, ib_dft, ic_dft)
-    #
-    #     print("done")
-    #     return df
-
-#################################################################################################
-    #  Tab-2 -> Plotting area?:
-#################################################################################################
-    
     def show_description(self):
         self.short_description.setText(self.description[self.list_of_files.currentText()])
 
@@ -336,7 +307,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['Real power'], pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("Real power")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file][column], pen=pen, name=name+f"_{column}")
 
     def plot_reactive_power(self):
         self.plot_widget1.clear()
@@ -344,7 +316,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['Reactive power'], pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("Reactive power")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file][column], pen=pen, name=name+f"_{column}")
+            # self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['Reactive power'], pen=pen,
+            #                        name=name)
 
     def plot_rms_voltage(self):
         self.plot_widget1.clear()
@@ -352,7 +327,11 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['RMS_voltage'], pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("RMS_voltage")]:
+                # print(column)
+                self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file][column], pen=pen, name=name+f"_{column}")
+            # print(self.plot_widget1.getPlotItem().listDataItems())
+            # self.plot_widget1.removeItem(self.plot_widget1.getPlotItem().listDataItems()[1])
 
     def plot_rms_current(self):
         self.plot_widget1.clear()
@@ -360,7 +339,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['RMS_current'], pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("RMS_current")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file][column], pen=pen, name=name+f"_{column}")
+            # self.plot_widget1.plot(self.all_files[file]["Time"], self.all_files[file]['RMS_current'], pen=pen,
+            #                        name=name)
 
     def plot_positive_voltage(self):
         self.plot_widget1.clear()
@@ -368,7 +350,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Positive sequence V']), pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("Positive sequence V")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file][column]), pen=pen, name=name+f"_{column}")
+            # self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Positive sequence V']),
+            #                        pen=pen, name=name)
 
     def plot_negative_voltage(self):
         self.plot_widget1.clear()
@@ -376,7 +361,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Negative sequence V']), pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("Negative sequence V")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file][column]), pen=pen, name=name+f"_{column}")
+            # self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Negative sequence V']),
+            #                        pen=pen, name=name)
 
     def plot_zero_voltage(self):
         self.plot_widget1.clear()
@@ -384,7 +372,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Zero sequence V']), pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("Zero sequence V")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file][column]), pen=pen, name=name+f"_{column}")
+            # self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Zero sequence V']),
+            #                        pen=pen, name=name)
 
     def plot_positive_current(self):
         self.plot_widget1.clear()
@@ -392,7 +383,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Positive sequence I']), pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("Positive sequence I")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file][column]), pen=pen, name=name+f"_{column}")
+            # self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Positive sequence I']),
+            #                        pen=pen, name=name)
 
     def plot_negative_current(self):
         self.plot_widget1.clear()
@@ -400,7 +394,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Negative sequence I']), pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("Negative sequence I")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file][column]), pen=pen, name=name+f"_{column}")
+            # self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Negative sequence I']),
+            #                        pen=pen, name=name)
 
     def plot_zero_current(self):
         self.plot_widget1.clear()
@@ -408,7 +405,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             name = file[:-4]
             pen = pg.mkPen(color=self.color_dict[file], width=1.5)
-            self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Zero sequence I']), pen=pen, name=name)
+            for column in [item for item in self.all_files[file].keys() if item.startswith("Zero sequence I")]:
+                self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file][column]), pen=pen, name=name+f"_{column}")
+            # self.plot_widget1.plot(self.all_files[file]["Time"], np.abs(self.all_files[file]['Zero sequence I']),
+            #                        pen=pen, name=name)
 
     def load_tooltips(self):
         self.TT_remove_selection.setToolTip('To de-select item from list, click on list on a blank area')
@@ -429,6 +429,7 @@ class DeselectableTreeView(QtWidgets.QListWidget):
         super(DeselectableTreeView, self).mousePressEvent(event)
         if not self.indexAt(event.pos()).isValid():
             self.clearSelection()
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
