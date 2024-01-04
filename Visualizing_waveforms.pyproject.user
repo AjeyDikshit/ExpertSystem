@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 5.0.2, 2024-01-03T18:29:13. -->
+<!-- Written by QtCreator 5.0.2, 2024-01-04T11:19:12. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -175,6 +175,7 @@
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">C:/Users/dixit/OneDrive/Desktop/Ajey/Project/AFAS_dec2023/qt/Visualizing_waveforms/question.png</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">PythonEditor.RunConfiguration.C:/Users/dixit/OneDrive/Desktop/Ajey/Project/AFAS_dec2023/qt/Visualizing_waveforms/question.png</value>
     <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">C:/Users/dixit/OneDrive/Desktop/Ajey/Project/AFAS_dec2023/qt/Visualizing_waveforms/question.png</value>
+    <value type="QString" key="PythonEditor.RunConfiguation.Interpreter">{4a9f9d73-503b-4724-bf03-76c6211ea560}</value>
     <value type="QString" key="PythonEditor.RunConfiguation.Script">C:\Users\dixit\OneDrive\Desktop\Ajey\Project\AFAS_dec2023\qt\Visualizing_waveforms\question.png</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">false</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
