@@ -30,7 +30,7 @@
      <string notr="true"/>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -293,7 +293,7 @@
        <string>[1, 1]</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="PB_load_file">
+     <widget class="QPushButton" name="PB_compute_values">
       <property name="geometry">
        <rect>
         <x>670</x>
@@ -304,6 +304,41 @@
       </property>
       <property name="text">
        <string>Compute and store</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_load_file">
+      <property name="geometry">
+       <rect>
+        <x>720</x>
+        <y>110</y>
+        <width>80</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Load File</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_list_of_files">
+      <property name="geometry">
+       <rect>
+        <x>830</x>
+        <y>120</y>
+        <width>301</width>
+        <height>311</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>List of files added/loaded:</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+      <property name="margin">
+       <number>0</number>
       </property>
      </widget>
     </widget>
@@ -995,7 +1030,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-583</y>
+         <y>-606</y>
          <width>702</width>
          <height>1265</height>
         </rect>
