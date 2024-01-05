@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1259</width>
+    <width>1281</width>
     <height>840</height>
    </rect>
   </property>
@@ -20,17 +20,17 @@
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>1251</width>
-      <height>831</height>
+      <x>10</x>
+      <y>10</y>
+      <width>1301</width>
+      <height>821</height>
      </rect>
     </property>
     <property name="toolTip">
      <string notr="true"/>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -39,7 +39,7 @@
      <widget class="QLineEdit" name="LE_file_path">
       <property name="geometry">
        <rect>
-        <x>120</x>
+        <x>100</x>
         <y>110</y>
         <width>501</width>
         <height>24</height>
@@ -49,11 +49,16 @@
      <widget class="QPushButton" name="browse_file_location">
       <property name="geometry">
        <rect>
-        <x>630</x>
-        <y>110</y>
-        <width>80</width>
-        <height>25</height>
+        <x>609</x>
+        <y>107</y>
+        <width>101</width>
+        <height>31</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>Browse File</string>
@@ -92,11 +97,16 @@
      <widget class="QLabel" name="label">
       <property name="geometry">
        <rect>
-        <x>127</x>
-        <y>188</y>
-        <width>101</width>
-        <height>16</height>
+        <x>123</x>
+        <y>187</y>
+        <width>121</width>
+        <height>21</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>List of signals:</string>
@@ -106,10 +116,15 @@
       <property name="geometry">
        <rect>
         <x>480</x>
-        <y>230</y>
-        <width>81</width>
-        <height>16</height>
+        <y>220</y>
+        <width>91</width>
+        <height>31</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
       </property>
       <property name="toolTip">
        <string notr="true" extracomment="The voltages will be grouped in groups of 3, so enter variables appropriately"/>
@@ -125,10 +140,15 @@
       <property name="geometry">
        <rect>
         <x>660</x>
-        <y>230</y>
-        <width>81</width>
-        <height>16</height>
+        <y>225</y>
+        <width>91</width>
+        <height>21</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
       </property>
       <property name="toolTip">
        <string notr="true" extracomment="The currents will be grouped in groups of 3, so enter variables appropriately"/>
@@ -196,9 +216,14 @@
        <rect>
         <x>310</x>
         <y>480</y>
-        <width>231</width>
+        <width>321</width>
         <height>21</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>Select sets for power calculations [V, I]:</string>
@@ -207,11 +232,23 @@
      <widget class="QLabel" name="TT_set_selection">
       <property name="geometry">
        <rect>
-        <x>530</x>
-        <y>470</y>
+        <x>600</x>
+        <y>467</y>
         <width>16</width>
         <height>16</height>
        </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
       </property>
       <property name="text">
        <string/>
@@ -226,11 +263,29 @@
      <widget class="QLabel" name="TT_voltage_set">
       <property name="geometry">
        <rect>
-        <x>552</x>
-        <y>230</y>
+        <x>573</x>
+        <y>229</y>
         <width>16</width>
         <height>16</height>
        </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
       </property>
       <property name="text">
        <string/>
@@ -245,11 +300,29 @@
      <widget class="QLabel" name="TT_current_set">
       <property name="geometry">
        <rect>
-        <x>735</x>
-        <y>230</y>
+        <x>753</x>
+        <y>229</y>
         <width>16</width>
         <height>16</height>
        </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
       </property>
       <property name="text">
        <string/>
@@ -264,11 +337,23 @@
      <widget class="QLabel" name="TT_remove_selection">
       <property name="geometry">
        <rect>
-        <x>440</x>
-        <y>420</y>
+        <x>430</x>
+        <y>415</y>
         <width>16</width>
         <height>16</height>
        </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
       </property>
       <property name="text">
        <string/>
@@ -283,7 +368,7 @@
      <widget class="QLineEdit" name="LE_power_selection">
       <property name="geometry">
        <rect>
-        <x>550</x>
+        <x>622</x>
         <y>480</y>
         <width>111</width>
         <height>24</height>
@@ -296,8 +381,8 @@
      <widget class="QPushButton" name="PB_compute_values">
       <property name="geometry">
        <rect>
-        <x>670</x>
-        <y>480</y>
+        <x>390</x>
+        <y>550</y>
         <width>131</width>
         <height>31</height>
        </rect>
@@ -310,10 +395,15 @@
       <property name="geometry">
        <rect>
         <x>720</x>
-        <y>110</y>
-        <width>80</width>
-        <height>25</height>
+        <y>107</y>
+        <width>81</width>
+        <height>31</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>Load File</string>
@@ -327,6 +417,11 @@
         <width>301</width>
         <height>311</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
       </property>
       <property name="text">
        <string>List of files added/loaded:</string>
@@ -346,26 +441,13 @@
      <attribute name="title">
       <string>Tab 2</string>
      </attribute>
-     <widget class="QPushButton" name="plot_button">
-      <property name="geometry">
-       <rect>
-        <x>480</x>
-        <y>70</y>
-        <width>81</width>
-        <height>31</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Plot</string>
-      </property>
-     </widget>
      <widget class="QGroupBox" name="groupBox">
       <property name="geometry">
        <rect>
         <x>730</x>
-        <y>110</y>
+        <y>12</y>
         <width>491</width>
-        <height>371</height>
+        <height>671</height>
        </rect>
       </property>
       <property name="font">
@@ -488,6 +570,24 @@
           <height>16</height>
          </rect>
         </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
         <property name="toolTipDuration">
          <number>10000</number>
         </property>
@@ -560,6 +660,24 @@
           <width>16</width>
           <height>16</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
         </property>
         <property name="toolTipDuration">
          <number>5000</number>
@@ -710,6 +828,24 @@
           <height>16</height>
          </rect>
         </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
         <property name="toolTipDuration">
          <number>5000</number>
         </property>
@@ -732,6 +868,24 @@
           <height>16</height>
          </rect>
         </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
         <property name="toolTipDuration">
          <number>5000</number>
         </property>
@@ -746,269 +900,248 @@
         </property>
        </widget>
       </widget>
-     </widget>
-     <widget class="QLabel" name="short_description">
-      <property name="geometry">
-       <rect>
-        <x>630</x>
-        <y>10</y>
-        <width>531</width>
-        <height>91</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-     <widget class="QGroupBox" name="groupBox_2">
-      <property name="geometry">
-       <rect>
-        <x>730</x>
-        <y>510</y>
-        <width>331</width>
-        <height>221</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-      <property name="title">
-       <string>Fine tuning:</string>
-      </property>
-      <widget class="QLineEdit" name="lineEdit">
-       <property name="geometry">
-        <rect>
-         <x>60</x>
-         <y>80</y>
-         <width>31</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <weight>50</weight>
-         <bold>false</bold>
-        </font>
-       </property>
-       <property name="toolTip">
-        <string extracomment="Hello"/>
-       </property>
-       <property name="toolTipDuration">
-        <number>1</number>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pushButton">
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>80</y>
-         <width>31</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>→</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pushButton_2">
-       <property name="geometry">
-        <rect>
-         <x>21</x>
-         <y>80</y>
-         <width>31</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>←</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pushButton_3">
-       <property name="geometry">
-        <rect>
-         <x>60</x>
-         <y>40</y>
-         <width>31</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>↑</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pushButton_4">
-       <property name="geometry">
-        <rect>
-         <x>60</x>
-         <y>120</y>
-         <width>31</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>↓</string>
-       </property>
-      </widget>
-      <widget class="QRadioButton" name="radioButton">
-       <property name="geometry">
-        <rect>
-         <x>200</x>
-         <y>100</y>
-         <width>151</width>
-         <height>22</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <weight>50</weight>
-         <bold>false</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Auto-normalize</string>
-       </property>
-      </widget>
-      <widget class="Line" name="line_6">
-       <property name="geometry">
-        <rect>
-         <x>160</x>
-         <y>30</y>
-         <width>20</width>
-         <height>161</height>
-        </rect>
-       </property>
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-      </widget>
-      <widget class="QLabel" name="x_shift_label">
+      <widget class="QGroupBox" name="groupBox_2">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>160</y>
-         <width>41</width>
-         <height>16</height>
+         <y>370</y>
+         <width>471</width>
+         <height>281</height>
         </rect>
        </property>
        <property name="font">
         <font>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
-       <property name="text">
-        <string>x-shift:</string>
+       <property name="title">
+        <string>Fine tuning:</string>
        </property>
+       <widget class="QLineEdit" name="LE_shift_value">
+        <property name="geometry">
+         <rect>
+          <x>40</x>
+          <y>160</y>
+          <width>81</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="toolTip">
+         <string extracomment="Hello"/>
+        </property>
+        <property name="toolTipDuration">
+         <number>1</number>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="PB_move_right">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>160</y>
+          <width>31</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>→</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="PB_move_left">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>160</y>
+          <width>31</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>←</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="PB_move_up">
+        <property name="geometry">
+         <rect>
+          <x>60</x>
+          <y>130</y>
+          <width>31</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>↑</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="PB_move_down">
+        <property name="geometry">
+         <rect>
+          <x>60</x>
+          <y>190</y>
+          <width>31</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>↓</string>
+        </property>
+       </widget>
+       <widget class="QRadioButton" name="radioButton">
+        <property name="geometry">
+         <rect>
+          <x>280</x>
+          <y>170</y>
+          <width>151</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Auto-normalize</string>
+        </property>
+       </widget>
+       <widget class="Line" name="line_6">
+        <property name="geometry">
+         <rect>
+          <x>250</x>
+          <y>100</y>
+          <width>20</width>
+          <height>161</height>
+         </rect>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="list_of_files">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>450</width>
+          <height>29</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>450</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>400</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="CB_signals_list">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>70</y>
+          <width>291</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>220</y>
+          <width>131</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="x_shift_label">
+           <property name="font">
+            <font>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>x-shift:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLabel" name="x_shift_value">
+           <property name="font">
+            <font>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="y_shift_label">
+           <property name="font">
+            <font>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>y-shift:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="y_shift_value">
+           <property name="font">
+            <font>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
-      <widget class="QLabel" name="y_shift_label">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>180</y>
-         <width>41</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <weight>50</weight>
-         <bold>false</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>y-shift:</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="x_shift_value">
-       <property name="geometry">
-        <rect>
-         <x>54</x>
-         <y>160</y>
-         <width>51</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <weight>50</weight>
-         <bold>false</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QLabel" name="y_shift_value">
-       <property name="geometry">
-        <rect>
-         <x>55</x>
-         <y>180</y>
-         <width>51</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <weight>50</weight>
-         <bold>false</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>50</y>
-        <width>402</width>
-        <height>49</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <widget class="QLabel" name="label_4">
-         <property name="maximumSize">
-          <size>
-           <width>100</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Select file:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="list_of_files">
-         <property name="minimumSize">
-          <size>
-           <width>400</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>400</width>
-           <height>16777215</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
      </widget>
      <widget class="QScrollArea" name="scrollArea">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>120</y>
+        <y>22</y>
         <width>721</width>
-        <height>661</height>
+        <height>761</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1030,9 +1163,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-606</y>
+         <y>0</y>
          <width>702</width>
-         <height>1265</height>
+         <height>1260</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -1188,6 +1321,41 @@
         </item>
        </layout>
       </widget>
+     </widget>
+     <widget class="QPushButton" name="PB_hide_gb1">
+      <property name="geometry">
+       <rect>
+        <x>800</x>
+        <y>10</y>
+        <width>41</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>△</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_option">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>740</x>
+        <y>12</y>
+        <width>55</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+      <property name="text">
+       <string>Options:</string>
+      </property>
      </widget>
     </widget>
    </widget>
