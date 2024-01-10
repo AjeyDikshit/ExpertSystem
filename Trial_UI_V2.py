@@ -1,18 +1,19 @@
 # This Python file uses the following encoding: utf-8
 import os
+import time
 from pathlib import Path
 import sys
 
-import comtrade
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 import pandas as pd
 import numpy as np
 import pyqtgraph as pg
 import pickle
-from comtrade import Comtrade
+from comtrade import Comtrade, ComtradeError
 
 import PPF as ppf
+import segmentation_functions as segment_function
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -20,6 +21,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
         uic.loadUi('Trial_UI_V2.ui', self)
 
+        self.set_checkboxes_unchecked()
         # Variables -----------------------------------------------------
         self.file_path = None  # File path of file user is going to load
 
@@ -33,9 +35,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.number_of_files = 0
         self.com = Comtrade()  # Initializing at start so that it can be reused for all files.
 
+        # Collapse widget
         self.hidden = False
         self.b = None
         self.label_option.setVisible(False)
+
+        # Segmentation
+        self.q, self.z1, self.threshold = None, None, None
+        self.CB_segment_voltage.stateChanged.connect(lambda: self._plot_segmentation("RMS_voltage", self.CB_segment_voltage))
+        self.CB_segment_current.stateChanged.connect(lambda: self._plot_segmentation("RMS_current", self.CB_segment_current))
+        self.CB_segment_frequency.stateChanged.connect(lambda: self._plot_segmentation("Frequency F_avg", self.CB_segment_frequency))
 
         # Tooltips:
         self.load_tooltips()
@@ -55,10 +64,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LW_voltage_set.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         self.LW_current_set.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
 
-        # Here lambda function is used as I wanted to send argument to the functions (arguments being, the clicked/checked widget themselves)
         # Plotting signals:
         self.CB_voltage_rms.stateChanged.connect(self.plot_signal)
         self.CB_current_rms.stateChanged.connect(self.plot_signal)
+        self.CB_frequency.stateChanged.connect(self.plot_signal)
 
         self.CB_real_power.stateChanged.connect(self.plot_signal)
         self.CB_reactive_power.stateChanged.connect(self.plot_signal)
@@ -79,15 +88,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.list_of_files.activated.connect(self.load_signals)
 
         self.PB_hide_gb1.clicked.connect(self.hide_gb1)
-        # self.PB_hide_gb2.clicked.connect(self.hide_gb2)
-        # Default settings
-        # self.LE_power_selection.setEnabled(False)
 
+        self.PB_save_state.clicked.connect(self.save_state)
+
+        # Default settings
+        self.LE_power_selection.setEnabled(False)
         self.plot_widget1.showGrid(x=True, y=True, alpha=1)
         self.plot_widget2.showGrid(x=True, y=True, alpha=1)
         self.plot_widget3.showGrid(x=True, y=True, alpha=1)
         self.plot_widget4.showGrid(x=True, y=True, alpha=1)
         self.plot_widget5.showGrid(x=True, y=True, alpha=1)
+        self.plot_widget6.showGrid(x=True, y=True, alpha=1)
+        self.plot_widget7.showGrid(x=True, y=True, alpha=1)
+        self.plot_widget8.showGrid(x=True, y=True, alpha=1)
         self.groupBox.setEnabled(False)
 
     #################################################################################################
@@ -100,45 +113,36 @@ class MainWindow(QtWidgets.QMainWindow):
                                              filter="Config files (*.cfg *.CFG)")[0]
         self.LE_file_path.setText(self.file_path)
 
-        filename = self.LE_file_path.text().split('/')[-1]
-        print(filename)
-        self.LW_voltage_set.clear()
-        self.LW_current_set.clear()
-        if self.LE_file_path.text().endswith("A1Q07DP1202311084f.cfg"):
-            self.LW_voltage_set.addItems(["LINE PT R-Ph", "LINE PT Y-Ph", "LINE PT B-Ph"])
-            self.LW_current_set.addItems(["LINE CT R-Ph", "LINE CT Y-Ph", "LINE CT B-Ph"])
-        elif self.LE_file_path.text().endswith("06.05.53.000.CFG"):
-            self.LW_voltage_set.addItems(["VA", "VB", "VC"])
-            self.LW_current_set.addItems(["IA", "IB", "IC"])
+        filename = self.LE_file_path.text().split('/')[-1][:-4]
+        self.voltage_set_items = set([])
+        self.current_set_items = set([])
 
         try:
             self.com.load(self.file_path)
             self.LW_attribute_list.clear()
             self.LW_attribute_list.addItems(self.com.analog_channel_ids)
-            # self.LW_voltage_set.clear()
-            # self.LW_current_set.clear()
-        except comtrade.ComtradeError as err:
+            self.LW_voltage_set.clear()
+            self.LW_current_set.clear()
+        except ComtradeError as err:
             QtWidgets.QMessageBox.information(self,
                                               "Fail",
                                               "File browse failed, please check the filepath")
 
     def load_file(self):
         dlg = QtWidgets.QFileDialog(self)
-        # self.file_path = dlg.getOpenFileName(self, 'Choose directory', r'C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\Comtrade Data')[0]
         self.file_path = dlg.getOpenFileName(self, 'Choose directory',
                                              r"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\Comtrade data",
-                                             filter="Comtrade (*.cfg *.CFG)")[0]
+                                             filter="Pickle (*.pickle)")[0]
 
         self.LE_file_path.setText(self.file_path)
-        filename = self.LE_file_path.text().split('/')[-1][:-4]
-        print(filename)
+        filename = self.LE_file_path.text().split('/')[-1]
 
         self.LW_voltage_set.clear()
         self.LW_current_set.clear()
         self.LW_attribute_list.clear()
 
         try:
-            with open(f"{self.file_path[:-4]}.pickle", "rb") as infile:
+            with open(f"{self.file_path}", "rb") as infile:
                 self.all_files1[filename] = pickle.load(infile)
 
             self.file_names = list(self.all_files1.keys())
@@ -147,7 +151,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.groupBox.setEnabled(True)
 
             self.number_of_files += 1
-            self.label_list_of_files.setText(self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
+            self.label_list_of_files.setText(
+                self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename[:-7]}")
 
             self.all_files1[filename]['color_dict'] = self.color_list[self.color_index]
             self.color_index += 1
@@ -202,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         number_of_voltage_sets = self.LW_voltage_set.count() // 3
         number_of_current_sets = self.LW_current_set.count() // 3
 
-        filename = self.LE_file_path.text().split('/')[-1]
+        filename = self.LE_file_path.text().split('/')[-1][:-4]
         print(filename)
 
         df_dict['Time'] = self.com.time
@@ -266,6 +271,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 df['Positive sequence I'], df['Negative sequence I'], df['Zero sequence I'] = ppf.sequencetransform(
                     df['Time'], ia_dft, ib_dft, ic_dft)
 
+                # TODO: change "freq4mdftPhasor" function and change the nan values of
+                fa = ppf.freq4mdftPhasor(va_dft, np.array(df['Time']), 1)[0]
+                fb = ppf.freq4mdftPhasor(vb_dft, np.array(df['Time']), 1)[0]
+                fc = ppf.freq4mdftPhasor(vc_dft, np.array(df['Time']), 1)[0]
+
+                fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]
+                fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
+                fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
+
+                f = (fa + fb + fc) / 3
+
+                df[f'Frequency Fa'] = np.real(fa)
+                df[f'Frequency Fb'] = np.real(fb)
+                df[f'Frequency Fc'] = np.real(fc)
+                df[f'Frequency F_avg'] = np.real(f)
+
             except KeyError as err:
                 QtWidgets.QMessageBox.information(self,
                                                   "Error",
@@ -293,6 +314,22 @@ class MainWindow(QtWidgets.QMainWindow):
                     df[f'Positive sequence I {_ + 1}'], df[f'Negative sequence I {_ + 1}'], df[
                         f'Zero sequence I {_ + 1}'] = ppf.sequencetransform(
                         df['Time'], ia_dft, ib_dft, ic_dft)
+
+                    fa = ppf.freq4mdftPhasor(va_dft, np.array(df['time']), 1)
+                    fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]  # Replaces the rise cycle and Nan values to first Non Nan value.
+
+                    fb = ppf.freq4mdftPhasor(vb_dft, np.array(df['time']), 1)
+                    fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
+
+                    fc = ppf.freq4mdftPhasor(vc_dft, np.array(df['time']), 1)
+                    fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
+
+                    f = (fa + fb + fc) / 3
+
+                    df[f'Frequency Fa{_ + 1}'] = fa
+                    df[f'Frequency Fb{_ + 1}'] = fb
+                    df[f'Frequency Fc{_ + 1}'] = fc
+                    df[f'Frequency F_avg{_ + 1}'] = f
 
                 except KeyError as err:
                     QtWidgets.QMessageBox.information(self,
@@ -326,7 +363,7 @@ class MainWindow(QtWidgets.QMainWindow):
     #################################################################################################
     #  Tab-2 -> Plotting area:
     #################################################################################################
-    def plot_signal(self,):
+    def plot_signal(self, ):
         # Calling function depending on the checkbox selected
         if self.CB_voltage_rms.isChecked():
             self.plot_rms_voltage()
@@ -337,6 +374,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plot_rms_current()
         else:
             self.plot_widget2.clear()
+
+        if self.CB_frequency.isChecked():
+            self.plot_avg_frequency()
+        else:
+            self.plot_widget6.clear()
 
         if self.CB_real_power.isChecked() and self.CB_reactive_power.isChecked():
             self.plot_widget3.clear()
@@ -417,13 +459,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("RMS_voltage")]:
-                self.plot_widget1.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
-                                       pen=pen, name=file[:-4] + f"_{column}")
-
-            # print(self.plot_widget1.LegendItem())
-            # print(self.plot_widget1.getPlotItem().listDataItems())
-            # self.plot_widget1.removeItem(self.plot_widget1.getPlotItem().listDataItems()[1])
+                self.plot_widget1.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_rms_current(self):
         self.plot_widget2.clear()
@@ -431,100 +470,106 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("RMS_current")]:
-                self.plot_widget2.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
-                                       pen=pen, name=file[:-4] + f"_{column}")
+                self.plot_widget2.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    pen=pen, name=file[:-4] + f"_{column}")
+
+    def plot_avg_frequency(self):
+        self.plot_widget6.clear()
+        self.plot_widget6.addLegend(offset=(350, 8))
+
+        for file in self.file_names:
+            pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
+            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Frequency F_avg")]:
+                self.plot_widget6.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_real_power(self):
-        # self.plot_widget3.clear()
         self.plot_widget3.addLegend(offset=(350, 8))
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Real power")]:
-                self.plot_widget3.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
-                                       pen=pen, name=file[:-4] + f"_{column}")
+                self.plot_widget3.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_reactive_power(self):
-        # self.plot_widget3.clear()
         self.plot_widget3.addLegend(offset=(350, 8))
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Reactive power")]:
-                self.plot_widget3.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
-                                       pen=pen, name=file[:-4] + f"_{column}")
+                self.plot_widget3.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_positive_voltage(self):
-        # self.plot_widget4.clear()
-        # self.plot_widget4.addLegend().clear()
         self.plot_widget4.addLegend(offset=(350, 8))
-        # print(self.plot_widget4.listDataItems())
-        # print(self.plot_widget4.addLegend().items)
-        # self.plot_widget4.addLegend()
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
-            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Positive sequence V")]:
-                self.plot_widget4.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
-                                       pen=pen, name=file[:-4] + f"_{column}")
+            for column in [item for item in self.all_files1[file]['data'].keys() if
+                           item.startswith("Positive sequence V")]:
+                self.plot_widget4.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_negative_voltage(self):
-        # self.plot_widget4.clear()
-        # self.plot_widget4.addLegend().clear()
         self.plot_widget4.addLegend(offset=(350, 8))
-        # print(self.plot_widget4.addLegend())
-        # self.plot_widget4.addLegend()
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
-            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Negative sequence V")]:
-                self.plot_widget4.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
-                                       pen=pen, name=file[:-4] + f"_{column}")
+            for column in [item for item in self.all_files1[file]['data'].keys() if
+                           item.startswith("Negative sequence V")]:
+                self.plot_widget4.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_zero_voltage(self):
-        # self.plot_widget4.clear()
-        # self.plot_widget4.addLegend().clear()
         self.plot_widget4.addLegend(offset=(350, 8))
-        # print(self.plot_widget4.addLegend())
-        # self.plot_widget4.addLegend()
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Zero sequence V")]:
-                self.plot_widget4.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
-                                       pen=pen, name=file[:-4] + f"_{column}")
+                self.plot_widget4.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_positive_current(self):
-        # self.plot_widget5.clear()
-        # self.plot_widget5.LegendItem.clear()
         self.plot_widget5.addLegend(offset=(350, 8))
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
-            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Positive sequence I")]:
-                self.plot_widget5.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
-                                       pen=pen, name=file[:-4] + f"_{column}")
+            for column in [item for item in self.all_files1[file]['data'].keys() if
+                           item.startswith("Positive sequence I")]:
+                self.plot_widget5.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_negative_current(self):
-        # self.plot_widget5.clear()
         self.plot_widget5.addLegend(offset=(350, 8))
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
-            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Negative sequence I")]:
-                self.plot_widget5.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
-                                       pen=pen, name=file[:-4] + f"_{column}")
+            for column in [item for item in self.all_files1[file]['data'].keys() if
+                           item.startswith("Negative sequence I")]:
+                self.plot_widget5.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def plot_zero_current(self):
-        # self.plot_widget5.clear()
         self.plot_widget5.addLegend(offset=(350, 8))
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("Zero sequence I")]:
-                self.plot_widget5.plot(self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                                       np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
-                                       pen=pen, name=file[:-4] + f"_{column}")
+                self.plot_widget5.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
+                    pen=pen, name=file[:-4] + f"_{column}")
 
     def move_left(self):
         try:
@@ -558,7 +603,8 @@ class MainWindow(QtWidgets.QMainWindow):
             new_val = float(self.y_shift_value.text()) + shift
 
             self.y_shift_value.setText(str(new_val))
-            self.all_files1[self.list_of_files.currentText()]['shift_values'][self.CB_signals_list.currentText()] = float(self.y_shift_value.text())
+            self.all_files1[self.list_of_files.currentText()]['shift_values'][
+                self.CB_signals_list.currentText()] = float(self.y_shift_value.text())
             self.plot_signal()
 
         except KeyError as err:
@@ -572,7 +618,8 @@ class MainWindow(QtWidgets.QMainWindow):
             new_val = float(self.y_shift_value.text()) + shift
 
             self.y_shift_value.setText(str(new_val))
-            self.all_files1[self.list_of_files.currentText()]['shift_values'][self.CB_signals_list.currentText()] = float(self.y_shift_value.text())
+            self.all_files1[self.list_of_files.currentText()]['shift_values'][
+                self.CB_signals_list.currentText()] = float(self.y_shift_value.text())
             self.plot_signal()
 
         except KeyError as err:
@@ -603,14 +650,76 @@ class MainWindow(QtWidgets.QMainWindow):
             self.groupBox_2.move(self.b)
 
     def save_state(self):
-        for filename in self.list_of_files:
-            with open(fr"C:\Users\dixit\OneDrive\Desktop\{filename[:-4]}.pickle", "wb") as outfile:
+        for filename in self.file_names:
+            with open(fr"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\pickle files\{filename}.pickle",
+                      "wb") as outfile:
                 pickle.dump(self.all_files1[filename], outfile)
                 print("Pickle file generated to load later after this session")
 
         QtWidgets.QMessageBox.information(self,
                                           "Success",
                                           "File loaded successfully, you can add more files/proceed to plotting")
+
+    def _plot_segmentation(self, signal, button):
+        if button.isChecked():  # Unchecking all checkboxes, and checking the checked checkbox
+            self.set_checkboxes_unchecked()
+            button.setChecked(True)
+
+        self.plot_widget7.clear()
+        self.plot_widget8.clear()
+
+        threshold_pen = pg.mkPen(color=(0, 94, 255), width=1.5)
+        segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)
+
+        for file in self.file_names:
+            pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
+            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith(signal)]:
+                self.q, self.z1, self.threshold = segment_function.segmentation_trendfilter(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column])
+
+                self.plot_widget7.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]),
+                    pen=pen, name=file[:-4] + f"_{column}")
+
+                self.plot_widget8.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.z1,
+                    pen=pen)
+                self.plot_widget8.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    [self.threshold] * len(
+                        self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x']),
+                    pen=threshold_pen)
+
+                for i in range(len(self.q)):
+                    self.plot_widget7.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
+                                            self.all_files1[file]['shift_values']['x']] * 3,
+                                           np.linspace(0, max(self.all_files1[file]['data'][column] +
+                                                              self.all_files1[file]['shift_values'][column]), 3),
+                                           pen=segment_pen)
+
+                    self.plot_widget7.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
+                                            self.all_files1[file]['shift_values']['x']] * 3,
+                                           np.linspace(0, max(self.all_files1[file]['data'][column] +
+                                                              self.all_files1[file]['shift_values'][column]), 3),
+                                           pen=segment_pen)
+
+                    self.plot_widget8.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
+                                            self.all_files1[file]['shift_values']['x']] * 3,
+                                           np.linspace(0, max(self.z1), 3), pen=segment_pen)
+                    self.plot_widget8.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
+                                            self.all_files1[file]['shift_values']['x']] * 3,
+                                           np.linspace(0, max(self.z1), 3), pen=segment_pen)
+
+        if not any([button.isChecked() for button in self.tab_3.findChildren(QtWidgets.QCheckBox)]):
+            self.plot_widget7.clear()
+            self.plot_widget8.clear()
+
+    def set_checkboxes_unchecked(self):
+        for edit in self.tab_3.findChildren(QtWidgets.QCheckBox):
+            edit.setChecked(False)
 
     def load_tooltips(self):
         self.TT_remove_selection.setToolTip('To de-select item from list, click on list on a blank area')
@@ -636,7 +745,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                              "⌜ Vp ⌝          ⌜ Va ⌝\n"
                                              "|  Vn  | = Sₜ⁻¹ | Vb   |\n"
                                              "⌞ V0 ⌟          ⌞ Vc ⌟\n")
-
 
 
 class DeselectableTreeView(QtWidgets.QListWidget):
