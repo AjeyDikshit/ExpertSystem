@@ -458,3 +458,15 @@ def insta_RMSCurrent(t: list, ia: list, ib: list, ic: list):
     for i in range(len(t)):
         i_rms[i] = (1/np.sqrt(3)) * np.sqrt(ia[i]**2 + ib[i]**2 + ic[i]**2)
     return i_rms
+
+def impedance(va: list, vb: list, vc: list, ia: list, ib: list, ic: list):
+    va = np.array(va)
+    vb = np.array(vb)
+    vc = np.array(vc)
+    ia = np.array(ia)
+    ib = np.array(ib)
+    ic = np.array(ic)
+
+    Z = np.sqrt(va**2 + vb**2 + vc**2) / np.sqrt(ia**2 + ib**2 + ic**2)
+
+    return Z

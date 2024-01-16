@@ -30,11 +30,11 @@
      <string notr="true"/>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
-      <string>Tab 1</string>
+      <string>Input stage</string>
      </attribute>
      <widget class="QLineEdit" name="LE_file_path">
       <property name="geometry">
@@ -445,7 +445,7 @@
     </widget>
     <widget class="QWidget" name="tab_2">
      <attribute name="title">
-      <string>Tab 2</string>
+      <string>Aligning waveforms</string>
      </attribute>
      <widget class="QGroupBox" name="groupBox">
       <property name="geometry">
@@ -723,61 +723,11 @@
        <property name="checked">
         <bool>false</bool>
        </property>
-       <widget class="QCheckBox" name="checkBox_10">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>30</y>
-          <width>72</width>
-          <height>22</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>72</width>
-          <height>22</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>100</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Voltage</string>
-        </property>
-       </widget>
-       <widget class="QCheckBox" name="checkBox_11">
-        <property name="geometry">
-         <rect>
-          <x>230</x>
-          <y>30</y>
-          <width>72</width>
-          <height>22</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>72</width>
-          <height>22</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>100</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Current</string>
-        </property>
-       </widget>
        <widget class="QCheckBox" name="CB_current_rms">
         <property name="geometry">
          <rect>
           <x>230</x>
-          <y>90</y>
+          <y>36</y>
           <width>112</width>
           <height>22</height>
          </rect>
@@ -790,7 +740,7 @@
         <property name="geometry">
          <rect>
           <x>30</x>
-          <y>90</y>
+          <y>36</y>
           <width>112</width>
           <height>22</height>
          </rect>
@@ -799,37 +749,11 @@
          <string>Voltage (RMS)</string>
         </property>
        </widget>
-       <widget class="QCheckBox" name="checkBox_6">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>60</y>
-          <width>156</width>
-          <height>22</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Instantaneous Voltage</string>
-        </property>
-       </widget>
-       <widget class="QCheckBox" name="checkBox_7">
-        <property name="geometry">
-         <rect>
-          <x>230</x>
-          <y>60</y>
-          <width>156</width>
-          <height>22</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Instantaneous Current</string>
-        </property>
-       </widget>
        <widget class="QLabel" name="TT_plotting_voltage_rms">
         <property name="geometry">
          <rect>
           <x>139</x>
-          <y>83</y>
+          <y>29</y>
           <width>16</width>
           <height>16</height>
          </rect>
@@ -869,7 +793,7 @@
         <property name="geometry">
          <rect>
           <x>339</x>
-          <y>84</y>
+          <y>30</y>
           <width>16</width>
           <height>16</height>
          </rect>
@@ -909,13 +833,52 @@
         <property name="geometry">
          <rect>
           <x>30</x>
-          <y>120</y>
+          <y>100</y>
           <width>112</width>
           <height>22</height>
          </rect>
         </property>
         <property name="text">
          <string>Frequency</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="CB_impedance">
+        <property name="geometry">
+         <rect>
+          <x>230</x>
+          <y>100</y>
+          <width>112</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Impedance</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="CB_current_rms_dft">
+        <property name="geometry">
+         <rect>
+          <x>230</x>
+          <y>68</y>
+          <width>181</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Current (RMS) using DFT</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="CB_voltage_rms_dft">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>68</y>
+          <width>181</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Voltage (RMS) using DFT</string>
         </property>
        </widget>
       </widget>
@@ -1201,9 +1164,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-470</y>
+         <y>0</y>
          <width>702</width>
-         <height>1510</height>
+         <height>2250</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -1217,12 +1180,42 @@
            </font>
           </property>
           <property name="text">
-           <string>Voltage plots:</string>
+           <string>Voltage RMS:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="PlotWidget" name="plot_widget1" native="true">
+         <widget class="PlotWidget" name="PW_voltage_rms" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>680</width>
+            <height>215</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_17">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+            <underline>true</underline>
+           </font>
+          </property>
+          <property name="text">
+           <string>Voltage RMS using DFT:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="PlotWidget" name="PW_voltage_rms_dft" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -1247,12 +1240,12 @@
            </font>
           </property>
           <property name="text">
-           <string>Current plots:</string>
+           <string>Current RMS:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="PlotWidget" name="plot_widget2" native="true">
+         <widget class="PlotWidget" name="PW_current_rms" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -1268,6 +1261,36 @@
          </widget>
         </item>
         <item>
+         <widget class="QLabel" name="label_18">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+            <underline>true</underline>
+           </font>
+          </property>
+          <property name="text">
+           <string>Current RMS using DFT:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="PlotWidget" name="PW_current_rms_dft" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>680</width>
+            <height>215</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="label_11">
           <property name="font">
            <font>
@@ -1277,12 +1300,42 @@
            </font>
           </property>
           <property name="text">
-           <string>Frequency plots:</string>
+           <string>Frequency:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="PlotWidget" name="plot_widget6" native="true">
+         <widget class="PlotWidget" name="PW_frequency" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>680</width>
+            <height>220</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_16">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+            <underline>true</underline>
+           </font>
+          </property>
+          <property name="text">
+           <string>Impedance:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="PlotWidget" name="PW_impedance" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -1307,12 +1360,12 @@
            </font>
           </property>
           <property name="text">
-           <string>Power plots:</string>
+           <string>Power:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="PlotWidget" name="plot_widget3" native="true">
+         <widget class="PlotWidget" name="PW_power" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -1337,12 +1390,12 @@
            </font>
           </property>
           <property name="text">
-           <string>Sequence plots (V):</string>
+           <string>Voltage Sequence:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="PlotWidget" name="plot_widget4" native="true">
+         <widget class="PlotWidget" name="PW_voltage_seq" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -1367,12 +1420,12 @@
            </font>
           </property>
           <property name="text">
-           <string>Sequence plots (I):</string>
+           <string>Current Sequence:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="PlotWidget" name="plot_widget5" native="true">
+         <widget class="PlotWidget" name="PW_current_seq" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -1410,7 +1463,7 @@
       <property name="geometry">
        <rect>
         <x>740</x>
-        <y>12</y>
+        <y>20</y>
         <width>55</width>
         <height>16</height>
        </rect>
@@ -1426,17 +1479,76 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="tab_4">
+     <attribute name="title">
+      <string>Instantaneous waveforms</string>
+     </attribute>
+     <widget class="PlotWidget" name="PW_instant_voltage" native="true">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>90</y>
+        <width>801</width>
+        <height>321</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>680</width>
+        <height>215</height>
+       </size>
+      </property>
+     </widget>
+     <widget class="PlotWidget" name="PW_instant_current" native="true">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>420</y>
+        <width>801</width>
+        <height>321</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>680</width>
+        <height>215</height>
+       </size>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="CB_instantaneous_tab">
+      <property name="geometry">
+       <rect>
+        <x>360</x>
+        <y>30</y>
+        <width>361</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
     <widget class="QWidget" name="tab_3">
      <attribute name="title">
-      <string>Page</string>
+      <string>Segmentation</string>
      </attribute>
      <widget class="PlotWidget" name="plot_widget7" native="true">
       <property name="geometry">
        <rect>
-        <x>60</x>
-        <y>90</y>
-        <width>680</width>
-        <height>215</height>
+        <x>20</x>
+        <y>70</y>
+        <width>751</width>
+        <height>271</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1455,10 +1567,10 @@
      <widget class="PlotWidget" name="plot_widget8" native="true">
       <property name="geometry">
        <rect>
-        <x>60</x>
-        <y>320</y>
-        <width>680</width>
-        <height>215</height>
+        <x>20</x>
+        <y>370</y>
+        <width>751</width>
+        <height>271</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -1474,16 +1586,120 @@
        </size>
       </property>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QLabel" name="label_4">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>40</y>
+        <width>91</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+        <underline>true</underline>
+       </font>
+      </property>
+      <property name="text">
+       <string>Signals:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_12">
+      <property name="geometry">
+       <rect>
+        <x>22</x>
+        <y>346</y>
+        <width>91</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+        <weight>75</weight>
+        <bold>true</bold>
+        <underline>true</underline>
+       </font>
+      </property>
+      <property name="text">
+       <string>Derivative:</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="LE_threshold_value">
+      <property name="geometry">
+       <rect>
+        <x>961</x>
+        <y>226</y>
+        <width>113</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_13">
+      <property name="geometry">
+       <rect>
+        <x>860</x>
+        <y>230</y>
+        <width>111</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Threshold value:</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_manual_segmentation">
+      <property name="geometry">
+       <rect>
+        <x>890</x>
+        <y>260</y>
+        <width>161</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Manual segmentation</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_14">
       <property name="geometry">
        <rect>
         <x>800</x>
-        <y>130</y>
-        <width>121</width>
-        <height>121</height>
+        <y>120</y>
+        <width>151</width>
+        <height>16</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="text">
+       <string>Automatic segmentation:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_15">
+      <property name="geometry">
+       <rect>
+        <x>800</x>
+        <y>200</y>
+        <width>151</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Manual segmentation:</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>801</x>
+        <y>145</y>
+        <width>391</width>
+        <height>24</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <widget class="QCheckBox" name="CB_segment_voltage">
          <property name="text">
