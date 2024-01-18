@@ -40,6 +40,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.b = None
         self.label_option.setVisible(False)
 
+        # Instantaneous tab
+        self.PB_add_instantaneous_plots.clicked.connect(self.plot_instantaneous)
+        self.count1 = 0
+        self.scroll1 = QtWidgets.QScrollArea()
+        self.verticalLayout_2.addWidget(self.scroll1)
+        self.layout2 = QtWidgets.QVBoxLayout()
+
         # Segmentation
         self.q, self.z1, self.threshold = None, None, None
         self.CB_segment_voltage.stateChanged.connect(
@@ -93,13 +100,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.PB_move_up.clicked.connect(self.move_up)
         self.PB_move_down.clicked.connect(self.move_down)
 
+        self.PB_scale_signal.clicked.connect(self.scale_signal)
+
         self.list_of_files.activated.connect(self.load_signals)
 
         self.PB_hide_gb1.clicked.connect(self.hide_gb1)
 
         self.PB_save_state.clicked.connect(self.save_state)
 
-        self.CB_instantaneous_tab.activated.connect(self.plot_instantaneous)
+        # self.CB_instantaneous_tab.activated.connect(self.plot_instantaneous)
         self.PB_manual_segmentation.clicked.connect(self.manual_segmentation)
 
         # Default settings
@@ -235,14 +244,14 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(self.LW_voltage_set.count()):
             if i % 3 == 0:
                 count += 1
-                df_dict[f'Va{count}'] = self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
+                df_dict[f'Va{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
             if i % 3 == 1:
-                df_dict[f'Vb{count}'] = self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
+                df_dict[f'Vb{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
             if i % 3 == 2:
-                df_dict[f'Vc{count}'] = self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]
+                df_dict[f'Vc{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
 
         for i in range(count):
             df_dict[f'RMS_voltage {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Va{i + 1}'],
@@ -252,14 +261,14 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(self.LW_current_set.count()):
             if i % 3 == 0:
                 count += 1
-                df_dict[f'Ia{count}'] = self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
+                df_dict[f'Ia{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
             if i % 3 == 1:
-                df_dict[f'Ib{count}'] = self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
+                df_dict[f'Ib{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
             if i % 3 == 2:
-                df_dict[f'Ic{count}'] = self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]
+                df_dict[f'Ic{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
 
         for i in range(count):
             df_dict[f'RMS_current {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Ia{i + 1}'],
@@ -388,8 +397,11 @@ class MainWindow(QtWidgets.QMainWindow):
         shifting_values = {item: 0 for item in df.columns[1:]}
         shifting_values['x'] = 0
 
+        scaling_values = {item: 1 for item in df.columns[1:]}
+
         self.all_files1[filename] = dict(data=df,
                                          shift_values=shifting_values,
+                                         scaling_values=scaling_values,
                                          color_dict=self.color_list[self.color_index])
 
         self.color_index += 1
@@ -528,7 +540,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("RMS_voltage")]:
                 self.PW_voltage_rms.plot(
                     self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) * self.all_files1[file]['scaling_values'][column],
                     pen=pen, name=file + f"_{column}")
 
     def plot_rms_current(self):
@@ -539,7 +551,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith("RMS_current")]:
                 self.PW_current_rms.plot(
                     self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) * self.all_files1[file]['scaling_values'][column],
                     pen=pen, name=file + f"_{column}")
 
     def plot_voltage_rms_dft(self):
@@ -730,6 +742,21 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Error",
                                               "Please select a file to shift.")
 
+    def scale_signal(self):
+        try:
+            self.current_scale.setText(str(float(self.current_scale.text()) * float(self.LE_scaling_factor.text())))
+            value = float(self.current_scale.text())
+
+            self.all_files1[self.list_of_files.currentText()]['scaling_values'][
+                self.CB_signals_list.currentText()] = value
+
+            self.plot_signal()
+
+        except KeyError as err:
+            QtWidgets.QMessageBox.information(self,
+                                              "Error",
+                                              "Please select a file to shift.")
+
     def load_signals(self):
         filename = self.list_of_files.currentText()
         self.x_shift_value.setText('0')
@@ -764,18 +791,21 @@ class MainWindow(QtWidgets.QMainWindow):
                                           "File loaded successfully, you can add more files/proceed to plotting")
 
     def plot_instantaneous(self):
-        self.PW_instant_voltage.clear()
-        self.PW_instant_current.clear()
+        self.count1 += 1
 
+        # for i in range(self.count1):
         file = self.CB_instantaneous_tab.currentText()
 
         if file == "":
-            self.PW_instant_voltage.clear()
-            self.PW_instant_current.clear()
+            QtWidgets.QMessageBox.information(self,
+                                              "Error",
+                                              "Please select a file to shift.")
             return
 
-        self.PW_instant_voltage.addLegend(offset=(350, 8))
-        self.PW_instant_current.addLegend(offset=(350, 8))
+        self.plot1 = pg.PlotWidget()
+        self.plot1.addLegend(offset=(280, 8))
+        self.plot1.setMinimumSize(480, 250)
+        self.plot1.setMaximumSize(550, 280)
 
         colors = ['r', 'y', 'b'] * 3
         color_count = 0
@@ -783,21 +813,35 @@ class MainWindow(QtWidgets.QMainWindow):
         for column in [item for item in self.all_files1[file]['data'].keys() if
                        item.startswith("V")]:
             pen = pg.mkPen(color=colors[color_count], width=1.5)
-            self.PW_instant_voltage.plot(
+            self.plot1.plot(
                 self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
                 self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
                 pen=pen, name=file + f"_{column}")
             color_count += 1
 
+        self.plot2 = pg.PlotWidget()
+        self.plot2.addLegend(offset=(280, 8))
+        self.plot2.setMinimumSize(480, 250)
+        self.plot2.setMaximumSize(550, 280)
+
         color_count = 0
         for column in [item for item in self.all_files1[file]['data'].keys() if
                        item.startswith("I")]:
             pen = pg.mkPen(color=colors[color_count], width=1.5)
-            self.PW_instant_current.plot(
+            self.plot2.plot(
                 self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
                 self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
                 pen=pen, name=file + f"_{column}")
             color_count += 1
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.plot1)
+        layout.addWidget(self.plot2)
+
+        self.layout2.addLayout(layout)
+        self.widget = QtWidgets.QWidget()
+        self.widget.setLayout(self.layout2)
+        self.scroll1.setWidget(self.widget)
 
     def _plot_segmentation(self, signal, button):
         if button.isChecked():  # Unchecking all checkboxes, and checking the checked checkbox
