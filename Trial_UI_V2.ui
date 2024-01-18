@@ -30,7 +30,7 @@
      <string notr="true"/>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -1577,6 +1577,19 @@
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2"/>
+     </widget>
+     <widget class="QPushButton" name="PB_remove_instantaneous_plots">
+      <property name="geometry">
+       <rect>
+        <x>640</x>
+        <y>20</y>
+        <width>80</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Remove</string>
+      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="tab_3">

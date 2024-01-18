@@ -42,10 +42,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Instantaneous tab
         self.PB_add_instantaneous_plots.clicked.connect(self.plot_instantaneous)
+        self.PB_remove_instantaneous_plots.clicked.connect(self.remove_plot_instantaneous)
         self.count1 = 0
         self.scroll1 = QtWidgets.QScrollArea()
         self.verticalLayout_2.addWidget(self.scroll1)
         self.layout2 = QtWidgets.QVBoxLayout()
+        self.plotted_plot = []
 
         # Segmentation
         self.q, self.z1, self.threshold = None, None, None
@@ -802,46 +804,71 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Please select a file to shift.")
             return
 
-        self.plot1 = pg.PlotWidget()
-        self.plot1.addLegend(offset=(280, 8))
-        self.plot1.setMinimumSize(480, 250)
-        self.plot1.setMaximumSize(550, 280)
+        if file not in self.plotted_plot:
+            self.plotted_plot.append(file)
 
-        colors = ['r', 'y', 'b'] * 3
-        color_count = 0
+            self.plot1 = pg.PlotWidget()
+            self.plot1.addLegend(offset=(280, 8))
+            self.plot1.setMinimumSize(480, 250)
+            self.plot1.setMaximumSize(550, 280)
 
-        for column in [item for item in self.all_files1[file]['data'].keys() if
-                       item.startswith("V")]:
-            pen = pg.mkPen(color=colors[color_count], width=1.5)
-            self.plot1.plot(
-                self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
-                pen=pen, name=file + f"_{column}")
-            color_count += 1
+            colors = ['r', 'y', 'b'] * 3
+            color_count = 0
 
-        self.plot2 = pg.PlotWidget()
-        self.plot2.addLegend(offset=(280, 8))
-        self.plot2.setMinimumSize(480, 250)
-        self.plot2.setMaximumSize(550, 280)
+            for column in [item for item in self.all_files1[file]['data'].keys() if
+                           item.startswith("V")]:
+                pen = pg.mkPen(color=colors[color_count], width=1.5)
+                self.plot1.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    pen=pen, name=file + f"_{column}")
+                color_count += 1
 
-        color_count = 0
-        for column in [item for item in self.all_files1[file]['data'].keys() if
-                       item.startswith("I")]:
-            pen = pg.mkPen(color=colors[color_count], width=1.5)
-            self.plot2.plot(
-                self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
-                pen=pen, name=file + f"_{column}")
-            color_count += 1
+            self.plot2 = pg.PlotWidget()
+            self.plot2.addLegend(offset=(280, 8))
+            self.plot2.setMinimumSize(480, 250)
+            self.plot2.setMaximumSize(550, 280)
 
-        layout = QtWidgets.QHBoxLayout()
-        layout.addWidget(self.plot1)
-        layout.addWidget(self.plot2)
+            color_count = 0
+            for column in [item for item in self.all_files1[file]['data'].keys() if
+                           item.startswith("I")]:
+                pen = pg.mkPen(color=colors[color_count], width=1.5)
+                self.plot2.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    pen=pen, name=file + f"_{column}")
+                color_count += 1
 
-        self.layout2.addLayout(layout)
-        self.widget = QtWidgets.QWidget()
-        self.widget.setLayout(self.layout2)
-        self.scroll1.setWidget(self.widget)
+            layout = QtWidgets.QHBoxLayout()
+            layout.addWidget(self.plot1)
+            layout.addWidget(self.plot2)
+
+            self.layout2.addLayout(layout)
+            self.widget = QtWidgets.QWidget()
+            self.widget.setLayout(self.layout2)
+            self.scroll1.setWidget(self.widget)
+        else:
+            QtWidgets.QMessageBox.information(self,
+                                              "Error",
+                                              "Plot already plotted!")
+
+    def remove_plot_instantaneous(self):
+        h_layouts = self.scroll1.findChildren(QtWidgets.QHBoxLayout)
+        plot_layout = self.scroll1.findChildren(pg.PlotWidget)
+
+        file = self.CB_instantaneous_tab.currentText()
+
+        if file in self.plotted_plot:
+            h_layout = h_layouts[self.plotted_plot.index(file)]
+            self.layout2.removeItem(h_layout)
+            plot_layout[0 + 2 * (self.plotted_plot.index(file))].deleteLater()
+            plot_layout[1 + 2 * (self.plotted_plot.index(file))].deleteLater()
+            self.plotted_plot.remove(file)
+
+        else:
+            QtWidgets.QMessageBox.information(self,
+                                              "Error",
+                                              "Plot doesn't exist!")
 
     def _plot_segmentation(self, signal, button):
         if button.isChecked():  # Unchecking all checkboxes, and checking the checked checkbox
