@@ -3,8 +3,10 @@ import os
 import time
 from pathlib import Path
 import sys
+import time
+import threading
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 from PyQt5 import uic
 import pandas as pd
 import numpy as np
@@ -15,6 +17,10 @@ from comtrade import Comtrade, ComtradeError
 import PPF as ppf
 import segmentation_functions as segment_function
 
+# TODO: The whole codebase can be refactored
+# TODO: Refactor all the plotting methods to a single plotting method, that takes the column name as argument (.startswith("<This thing as argument>"))
+# TODO: Break the compute values function into 2 functions? 1 for normal and 1 for multiple sets
+# TODO: Try to refactor move_left/right and move_up/down to 1 function that takes +1/-1 as the argument.
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -34,6 +40,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.number_of_files = 0
         self.com = Comtrade()  # Initializing at start so that it can be reused for all files.
+
+        self.timer = None
 
         # Collapse widget
         self.hidden = False
@@ -63,8 +71,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Signals -----------------------------------------------------
         # Tab-1 --> User input tab
-        self.voltage_set_items = set([])
-        self.current_set_items = set([])
+        self.voltage_set_items = set()
+        self.current_set_items = set()
 
         self.browse_file_location.clicked.connect(self.get_file)
         self.PB_load_file.clicked.connect(self.load_file)
@@ -135,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def get_file(self):
         dlg = QtWidgets.QFileDialog(self)
         self.file_path = dlg.getOpenFileName(self, 'Choose directory',
-                                             r"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\Comtrade data\A1Q07DP1202311084f.cfg",
+                                             r"C:\Users\dixit\OneDrive\Desktop\Ajey\Project\AFAS_dec2023\Mumbai Data\Oct12_2020_COMTRADE_Mumbai_Blackout\Unit 7 GRP",
                                              filter="Config files (*.cfg *.CFG)")[0]
         self.LE_file_path.setText(self.file_path)
 
@@ -149,6 +157,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.LW_attribute_list.addItems(self.com.analog_channel_ids)
             self.LW_voltage_set.clear()
             self.LW_current_set.clear()
+
+            if self.LE_file_path.text().endswith("100125 hrs.cfg"):
+                self.LW_voltage_set.addItems(["GTG GEN.Va.", "GTG GEN.Vb.", "GTG GEN.Vc.", "STG GEN.Va.", "STG GEN.Vb.", "STG GEN.Vc."])
+                self.LW_current_set.addItems(["GTG GEN.Ia.", "GTG GEN.Ib.", "GTG GEN.Ic.", "STG GEN.Ia.", "STG GEN.Ib.", "STG GEN.Ic."])
+
         except ComtradeError as err:
             QtWidgets.QMessageBox.information(self,
                                               "Fail",
@@ -157,7 +170,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def load_file(self):
         dlg = QtWidgets.QFileDialog(self)
         self.file_path = dlg.getOpenFileName(self, 'Choose directory',
-                                             r"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\Comtrade data",
+                                             r"C:\Users\dixit\OneDrive\Desktop\Ajey\Project\AFAS_dec2023",
                                              filter="Pickle (*.pickle)")[0]
 
         self.LE_file_path.setText(self.file_path)
@@ -233,6 +246,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.LE_power_selection.setEnabled(False)
 
     def compute_values(self):
+        # TODO: Implement threading, such that QMessageBox will pop up
+        ...
+        # thread = threading.Thread(target=self._compute_values, daemon=True)
+        # thread.start()
+        self._compute_values()
+        # p = QtCore.QThread()
+        # p.start(self._compute_values())
+
+    def _compute_values(self):
         df_dict = {}
         number_of_voltage_sets = self.LW_voltage_set.count() // 3
         number_of_current_sets = self.LW_current_set.count() // 3
@@ -323,9 +345,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 f = (fa + fb + fc) / 3
 
-                # df[f'Frequency Fa'] = np.real(fa)
-                # df[f'Frequency Fb'] = np.real(fb)
-                # df[f'Frequency Fc'] = np.real(fc)
                 df[f'Frequency F_avg'] = np.real(f)
 
             except KeyError as err:
@@ -334,38 +353,46 @@ class MainWindow(QtWidgets.QMainWindow):
                                                   "Didn't obtain correct number of values, please check your input lists")
         elif type(power_input[0]) == list:
             for _ in range(len(power_input)):
+                print(_)
                 try:
+                    self.timer = time.time()
                     va, vb, vc = df[f'Va{power_input[_][0]}'], df[f'Vb{power_input[_][0]}'], df[
                         f'Vc{power_input[_][0]}']
                     ia, ib, ic = df[f'Ia{power_input[_][1]}'], df[f'Ib{power_input[_][1]}'], df[
                         f'Ic{power_input[_][1]}']
-
+                    print("V, I calculated")
                     df[f"Real power {_ + 1}"], df[f'Reactive power {_ + 1}'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
+                    print("Power calculated")
+                    df[f"Z (Impedance) {_ + 1}"] = ppf.impedance(va, vb, vc, ia, ib, ic)
+                    print("Impedance")
+                    print(f"Time took: {time.time() - self.timer}")
 
-                    df[f"Z {_ + 1}"] = ppf.impedance(va, vb, vc, ia, ib, ic)
-
+                    self.timer = time.time()
                     df[f"DFT Ia {_ + 1}"] = ppf.window_phasor(np.array(ia), np.array(df['Time']), 1, 1)[0]
                     df[f"DFT Ib {_ + 1}"] = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
                     df[f"DFT Ic {_ + 1}"] = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
                     df[f"DFT Va {_ + 1}"] = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
                     df[f"DFT Vb {_ + 1}"] = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
                     df[f"DFT Vc {_ + 1}"] = ppf.window_phasor(np.array(vc), np.array(df['Time']), 1, 1)[0]
+                    print(f"DFT calculated took {time.time() - self.timer}s")
 
                     df[f"DFT voltage RMS {_ + 1}"] = ppf.instaLL_RMSVoltage(np.array(df['Time']),
                                                                             np.abs(df[f"DFT Va {_ + 1}"]),
                                                                             np.abs(df[f"DFT Vb {_ + 1}"]),
                                                                             np.abs(df[f"DFT Vc {_ + 1}"]), )
-
+                    print("DFT RMS V")
                     df[f"DFT current RMS {_ + 1}"] = ppf.insta_RMSCurrent(np.array(df['Time']),
                                                                           np.abs(df[f"DFT Ia {_ + 1}"]),
                                                                           np.abs(df[f"DFT Ib {_ + 1}"]),
                                                                           np.abs(df[f"DFT Ic {_ + 1}"]), )
+                    print("DFT RMS I")
                     df[f'Positive sequence V {_ + 1}'], \
                     df[f'Negative sequence V {_ + 1}'], \
                     df[f'Zero sequence V {_ + 1}'] = ppf.sequencetransform(df['Time'],
                                                                            df[f"DFT Va {_ + 1}"],
                                                                            df[f"DFT Vb {_ + 1}"],
                                                                            df[f"DFT Vc {_ + 1}"])
+                    print("Sequence V")
 
                     df[f'Positive sequence I {_ + 1}'], \
                     df[f'Negative sequence I {_ + 1}'], \
@@ -373,23 +400,18 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                            df[f"DFT Ia {_ + 1}"],
                                                                            df[f"DFT Ib {_ + 1}"],
                                                                            df[f"DFT Ic {_ + 1}"])
+                    print("Sequence I")
 
-                    fa = ppf.freq4mdftPhasor(df[f"DFT Va {_ + 1}"], np.array(df['time']), 1)
-                    fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][
-                                                                       0] + 1]  # Replaces the rise cycle and Nan values to first Non Nan value.
-
-                    fb = ppf.freq4mdftPhasor(df[f"DFT Vb {_ + 1}"], np.array(df['time']), 1)
+                    fa = ppf.freq4mdftPhasor(df[f"DFT Va {_ + 1}"], np.array(df['Time']), 1)[0]
+                    fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]  # Replaces the rise cycle and Nan values to first Non Nan value.
+                    fb = ppf.freq4mdftPhasor(df[f"DFT Vb {_ + 1}"], np.array(df['Time']), 1)[0]
                     fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
-
-                    fc = ppf.freq4mdftPhasor(df[f"DFT Vc {_ + 1}"], np.array(df['time']), 1)
+                    fc = ppf.freq4mdftPhasor(df[f"DFT Vc {_ + 1}"], np.array(df['Time']), 1)[0]
                     fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
 
                     f = (fa + fb + fc) / 3
 
-                    # df[f'Frequency Fa{_ + 1}'] = fa
-                    # df[f'Frequency Fb{_ + 1}'] = fb
-                    # df[f'Frequency Fc{_ + 1}'] = fc
-                    df[f'Frequency F_avg{_ + 1}'] = f
+                    df[f'Frequency F_avg{_ + 1}'] = np.real(f)
 
                 except KeyError as err:
                     QtWidgets.QMessageBox.information(self,
@@ -415,6 +437,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.CB_instantaneous_tab.clear()
         self.CB_instantaneous_tab.addItems([""] + self.file_names)
 
+        print(self.all_files1[filename]['data'].keys())
+
         with open(f"{self.LE_file_path.text()[:-4]}.pickle", "wb") as outfile:
             pickle.dump(self.all_files1[filename], outfile)
             print("Pickle file generated to load later after this session")
@@ -425,7 +449,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.number_of_files += 1
         self.label_list_of_files.setText(self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
-
+        return 
+    
     #################################################################################################
     #  Tab-2 -> Plotting area:
     #################################################################################################
@@ -847,6 +872,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.widget = QtWidgets.QWidget()
             self.widget.setLayout(self.layout2)
             self.scroll1.setWidget(self.widget)
+
         else:
             QtWidgets.QMessageBox.information(self,
                                               "Error",
@@ -891,7 +917,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.plot_widget7.plot(
                     self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) * self.all_files1[file]['scaling_values'][column],
                     pen=pen, name=file + f"_{column}")
 
                 self.plot_widget8.plot(
@@ -951,7 +977,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.plot_widget7.plot(
                     self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) * self.all_files1[file]['scaling_values'][column],
                     pen=pen, name=file + f"_{column}")
 
                 self.plot_widget8.plot(
