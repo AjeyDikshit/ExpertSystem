@@ -93,10 +93,9 @@ def mw_dft(data: list, t: list, omega: float) -> complex:
     :param omega: Dominant frequency
     :return: Complex number
     """
-    X_data = 0
     win_len = len(t)
-    for k in range(len(t)):
-        X_data = X_data + data[k] * np.exp((-omega * t[k] * 1j))
+    X_data = np.zeros(len(t))
+    X_data = sum(X_data + data * np.exp((-omega * t * 1j)))
     X_data = np.sqrt(2) / win_len * X_data
     return X_data
 
