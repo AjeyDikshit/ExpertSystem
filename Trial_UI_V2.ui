@@ -30,7 +30,7 @@
      <string notr="true"/>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -440,19 +440,6 @@
       </property>
       <property name="margin">
        <number>0</number>
-      </property>
-     </widget>
-     <widget class="QTextEdit" name="file_calculation_progress">
-      <property name="geometry">
-       <rect>
-        <x>680</x>
-        <y>550</y>
-        <width>361</width>
-        <height>221</height>
-       </rect>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
       </property>
      </widget>
     </widget>

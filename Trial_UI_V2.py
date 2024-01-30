@@ -17,20 +17,16 @@ from comtrade import Comtrade, ComtradeError
 import PPF as ppf
 import segmentation_functions as segment_function
 
+
 # TODO: The whole codebase can be refactored
+# TODO: Remove the 0s in DFT (The "cycles" part)
+# TODO: Option to remove files if required
+# TODO: Improve save state: Store all files in a folder (name=datetime), and "load save state" browse the folder and load all the files directly.
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         uic.loadUi('Trial_UI_V2.ui', self)
-
-        self.obj = Worker()
-        self.thread = QtCore.QThread()
-
-        self.obj.intReady.connect(self.compute_values)
-        self.obj.moveToThread(self.thread)
-        self.obj.finished.connect(self.thread.quit)
-        self.thread.started.connect(lambda: self.obj._compute_values(self.file_calculation_progress, self.LW_voltage_set, self.LW_current_set, self.file_path, self.com, self.LE_power_selection))
 
         #################################################################################################
         #  General:
@@ -162,8 +158,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.LW_current_set.clear()
 
             if self.LE_file_path.text().endswith("100125 hrs.cfg"):
-                self.LW_voltage_set.addItems(["GTG GEN.Va.", "GTG GEN.Vb.", "GTG GEN.Vc.", "STG GEN.Va.", "STG GEN.Vb.", "STG GEN.Vc."])
-                self.LW_current_set.addItems(["GTG GEN.Ia.", "GTG GEN.Ib.", "GTG GEN.Ic.", "STG GEN.Ia.", "STG GEN.Ib.", "STG GEN.Ic."])
+                self.LW_voltage_set.addItems(
+                    ["GTG GEN.Va.", "GTG GEN.Vb.", "GTG GEN.Vc.", "STG GEN.Va.", "STG GEN.Vb.", "STG GEN.Vc."])
+                self.LW_current_set.addItems(
+                    ["GTG GEN.Ia.", "GTG GEN.Ib.", "GTG GEN.Ic.", "STG GEN.Ia.", "STG GEN.Ib.", "STG GEN.Ic."])
 
         except ComtradeError as err:
             QtWidgets.QMessageBox.information(self,
@@ -173,7 +171,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def load_file(self):
         dlg = QtWidgets.QFileDialog(self)
         self.file_path = dlg.getOpenFileName(self, 'Choose directory',
-                                             r"C:\Users\dixit\OneDrive\Desktop\Ajey\Project\AFAS_dec2023",
+                                             r"C:\Users\dixit\OneDrive\Desktop\Ajey\Project\AFAS_dec2023\Mumbai Data\Oct12_2020_COMTRADE_Mumbai_Blackout\Unit 7 GRP",
                                              filter="Pickle (*.pickle)")[0]
 
         self.LE_file_path.setText(self.file_path)
@@ -250,232 +248,225 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def compute_values(self):
         # TODO: Implement threading, such that QMessageBox will pop up
-        self.thread.start()
-        # self._compute_values()
+        self._compute_values()
+        # threading.Thread(target=self._compute_values, daemon=True).start()
 
+    def _compute_values(self):
+        df_dict = {}
+        number_of_voltage_sets = self.LW_voltage_set.count() // 3
+        number_of_current_sets = self.LW_current_set.count() // 3
 
-    # def _compute_values(self):
-    #     self.file_calculation_progress.clear()
-    #     df_dict = {}
-    #     number_of_voltage_sets = self.LW_voltage_set.count() // 3
-    #     number_of_current_sets = self.LW_current_set.count() // 3
-    #
-    #     filename = self.LE_file_path.text().split('/')[-1][:-4]
-    #     self.file_calculation_progress.setText(f"For {filename}, starting calculations")
-    #
-    #     df_dict['Time'] = self.com.time
-    #
-    #     count = 0
-    #     for i in range(self.LW_voltage_set.count()):
-    #         if i % 3 == 0:
-    #             count += 1
-    #             df_dict[f'Va{count}'] = np.array(self.com.analog[
-    #                 self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
-    #         if i % 3 == 1:
-    #             df_dict[f'Vb{count}'] = np.array(self.com.analog[
-    #                 self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
-    #         if i % 3 == 2:
-    #             df_dict[f'Vc{count}'] = np.array(self.com.analog[
-    #                 self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
-    #
-    #     for i in range(count):
-    #         df_dict[f'RMS_voltage {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Va{i + 1}'],
-    #                                                                  df_dict[f'Vb{i + 1}'], df_dict[f'Vc{i + 1}'])
-    #     self.file_calculation_progress.append(f"Instantaneous, RMS voltage: ✓")
-    #
-    #     count = 0
-    #     for i in range(self.LW_current_set.count()):
-    #         if i % 3 == 0:
-    #             count += 1
-    #             df_dict[f'Ia{count}'] = np.array(self.com.analog[
-    #                 self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
-    #         if i % 3 == 1:
-    #             df_dict[f'Ib{count}'] = np.array(self.com.analog[
-    #                 self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
-    #         if i % 3 == 2:
-    #             df_dict[f'Ic{count}'] = np.array(self.com.analog[
-    #                 self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
-    #
-    #     for i in range(count):
-    #         df_dict[f'RMS_current {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Ia{i + 1}'],
-    #                                                                  df_dict[f'Ib{i + 1}'], df_dict[f'Ic{i + 1}'])
-    #     self.file_calculation_progress.append(f"Instantaneous, RMS current: ✓")
-    #
-    #     df = pd.DataFrame(df_dict)
-    #     # For derived quantities calculations:
-    #     power_input = list(eval(self.LE_power_selection.text()))
-    #     if type(power_input[0]) == int:
-    #         if power_input[0] > number_of_voltage_sets or power_input[1] > number_of_current_sets:
-    #             QtWidgets.QMessageBox.information(self, "Error", "Please input proper values for power calculation")
-    #         try:
-    #             va, vb, vc = df[f'Va{power_input[0]}'], df[f'Vb{power_input[0]}'], df[f'Vc{power_input[0]}']
-    #             ia, ib, ic = df[f'Ia{power_input[1]}'], df[f'Ib{power_input[1]}'], df[f'Ic{power_input[1]}']
-    #
-    #             df["Real power"], df['Reactive power'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
-    #             self.file_calculation_progress.append(f"Power: ✓")
-    #
-    #             df["Z (Impedance)"] = ppf.impedance(va, vb, vc, ia, ib, ic)
-    #             self.file_calculation_progress.append(f"Impedance: ✓")
-    #
-    #             df["DFT Va"] = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
-    #             df["DFT Vb"] = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
-    #             df["DFT Vc"] = ppf.window_phasor(np.array(vc), np.array(df['Time']), 1, 1)[0]
-    #             df["DFT Ia"] = ppf.window_phasor(np.array(ia), np.array(df['Time']), 1, 1)[0]
-    #             df["DFT Ib"] = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
-    #             df["DFT Ic"] = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
-    #
-    #             self.file_calculation_progress.append(f"DFT of instantaneous signals: ✓")
-    #
-    #             df["DFT voltage RMS"] = ppf.instaLL_RMSVoltage(np.array(df['Time']),
-    #                                                            np.abs(df["DFT Va"]),
-    #                                                            np.abs(df["DFT Vb"]),
-    #                                                            np.abs(df["DFT Vc"]), )
-    #             self.file_calculation_progress.append(f"RMS voltage using DFT: ✓")
-    #
-    #             df["DFT current RMS"] = ppf.insta_RMSCurrent(np.array(df['Time']),
-    #                                                          np.abs(df["DFT Ia"]),
-    #                                                          np.abs(df["DFT Ib"]),
-    #                                                          np.abs(df["DFT Ic"]), )
-    #             self.file_calculation_progress.append(f"RMS current using DFT: ✓")
-    #
-    #             df['Positive sequence V'], df['Negative sequence V'], df['Zero sequence V'] = ppf.sequencetransform(
-    #                 df['Time'], df["DFT Va"], df["DFT Vb"], df["DFT Vc"])
-    #             self.file_calculation_progress.append(f"Sequence transform (Voltage): ✓")
-    #
-    #             df['Positive sequence I'], df['Negative sequence I'], df['Zero sequence I'] = ppf.sequencetransform(
-    #                 df['Time'], df["DFT Ia"], df["DFT Ib"], df["DFT Ic"])
-    #             self.file_calculation_progress.append(f"Sequence transform (Current): ✓")
-    #
-    #             fa = ppf.freq4mdftPhasor(np.array(df["DFT Va"]), np.array(df['Time']), 1)[0]
-    #             fb = ppf.freq4mdftPhasor(np.array(df["DFT Vb"]), np.array(df['Time']), 1)[0]
-    #             fc = ppf.freq4mdftPhasor(np.array(df["DFT Vc"]), np.array(df['Time']), 1)[0]
-    #
-    #             fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]
-    #             fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
-    #             fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
-    #
-    #             f = (fa + fb + fc) / 3
-    #
-    #             df[f'Frequency F_avg'] = np.real(f)
-    #             self.file_calculation_progress.append(f"Frequency: ✓")
-    #
-    #         except KeyError as err:
-    #             QtWidgets.QMessageBox.information(self,
-    #                                               "Error",
-    #                                               "Didn't obtain correct number of values, please check your input lists")
-    #             return
-    #     elif type(power_input[0]) == list:
-    #         for _ in range(len(power_input)):
-    #             self.file_calculation_progress.append(f"\n---------------------------\nCalculations for set {_ + 1}\n---------------------------")
-    #             print(_)
-    #             try:
-    #                 print("Starting calc")
-    #                 va, vb, vc = df[f'Va{power_input[_][0]}'], df[f'Vb{power_input[_][0]}'], df[
-    #                     f'Vc{power_input[_][0]}']
-    #                 ia, ib, ic = df[f'Ia{power_input[_][1]}'], df[f'Ib{power_input[_][1]}'], df[
-    #                     f'Ic{power_input[_][1]}']
-    #
-    #                 df[f"Real power {_ + 1}"], df[f'Reactive power {_ + 1}'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
-    #                 self.file_calculation_progress.append(f"Power: ✓")
-    #                 self.file_calculation_progress.show()
-    #
-    #                 df[f"Z (Impedance) {_ + 1}"] = ppf.impedance(va, vb, vc, ia, ib, ic)
-    #                 self.file_calculation_progress.append(f"Impedance: ✓")
-    #
-    #                 df[f"DFT Ia {_ + 1}"] = ppf.window_phasor(np.array(ia), np.array(df['Time']), 1, 1)[0]
-    #                 df[f"DFT Ib {_ + 1}"] = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
-    #                 df[f"DFT Ic {_ + 1}"] = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
-    #                 df[f"DFT Va {_ + 1}"] = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
-    #                 df[f"DFT Vb {_ + 1}"] = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
-    #                 df[f"DFT Vc {_ + 1}"] = ppf.window_phasor(np.array(vc), np.array(df['Time']), 1, 1)[0]
-    #                 self.file_calculation_progress.append(f"DFT of instantaneous signals: ✓")
-    #                 print("DFT")
-    #
-    #                 df[f"DFT voltage RMS {_ + 1}"] = ppf.instaLL_RMSVoltage(np.array(df['Time']),
-    #                                                                         np.abs(df[f"DFT Va {_ + 1}"]),
-    #                                                                         np.abs(df[f"DFT Vb {_ + 1}"]),
-    #                                                                         np.abs(df[f"DFT Vc {_ + 1}"]), )
-    #                 self.file_calculation_progress.append(f"RMS voltage using DFT: ✓")
-    #
-    #                 df[f"DFT current RMS {_ + 1}"] = ppf.insta_RMSCurrent(np.array(df['Time']),
-    #                                                                       np.abs(df[f"DFT Ia {_ + 1}"]),
-    #                                                                       np.abs(df[f"DFT Ib {_ + 1}"]),
-    #                                                                       np.abs(df[f"DFT Ic {_ + 1}"]), )
-    #                 self.file_calculation_progress.append(f"RMS current using DFT: ✓")
-    #
-    #                 df[f'Positive sequence V {_ + 1}'], \
-    #                 df[f'Negative sequence V {_ + 1}'], \
-    #                 df[f'Zero sequence V {_ + 1}'] = ppf.sequencetransform(df['Time'],
-    #                                                                        df[f"DFT Va {_ + 1}"],
-    #                                                                        df[f"DFT Vb {_ + 1}"],
-    #                                                                        df[f"DFT Vc {_ + 1}"])
-    #                 self.file_calculation_progress.append(f"Sequence transform (Voltage): ✓")
-    #                 print("Sequence V")
-    #                 df[f'Positive sequence I {_ + 1}'], \
-    #                 df[f'Negative sequence I {_ + 1}'], \
-    #                 df[f'Zero sequence I {_ + 1}'] = ppf.sequencetransform(df['Time'],
-    #                                                                        df[f"DFT Ia {_ + 1}"],
-    #                                                                        df[f"DFT Ib {_ + 1}"],
-    #                                                                        df[f"DFT Ic {_ + 1}"])
-    #                 self.file_calculation_progress.append(f"Sequence transform (Current): ✓")
-    #                 print("Sequence I")
-    #
-    #                 fa = ppf.freq4mdftPhasor(df[f"DFT Va {_ + 1}"], np.array(df['Time']), 1)[0]
-    #                 fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]  # Replaces the rise cycle and Nan values to first Non Nan value.
-    #                 fb = ppf.freq4mdftPhasor(df[f"DFT Vb {_ + 1}"], np.array(df['Time']), 1)[0]
-    #                 fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
-    #                 fc = ppf.freq4mdftPhasor(df[f"DFT Vc {_ + 1}"], np.array(df['Time']), 1)[0]
-    #                 fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
-    #
-    #                 f = (fa + fb + fc) / 3
-    #
-    #                 df[f'Frequency F_avg{_ + 1}'] = np.real(f)
-    #                 self.file_calculation_progress.append(f"Frequency: ✓")
-    #
-    #             except KeyError as err:
-    #                 QtWidgets.QMessageBox.information(self,
-    #                                                   "Error",
-    #                                                   "Didn't obtain correct number of values, please check your input lists")
-    #                 return
-    #
-    #     shifting_values = {item: 0 for item in df.columns[1:]}
-    #     shifting_values['x'] = 0
-    #
-    #     scaling_values = {item: 1 for item in df.columns[1:]}
-    #
-    #     self.all_files1[filename] = dict(data=df,
-    #                                      shift_values=shifting_values,
-    #                                      scaling_values=scaling_values,
-    #                                      color_dict=self.color_list[self.color_index])
-    #
-    #     self.color_index += 1
-    #     self.file_names = list(self.all_files1.keys())
-    #     self.list_of_files.clear()
-    #     self.list_of_files.addItems([""] + self.file_names)
-    #     self.groupBox.setEnabled(True)
-    #
-    #     self.CB_instantaneous_tab.clear()
-    #     self.CB_instantaneous_tab.addItems([""] + self.file_names)
-    #
-    #     print(self.all_files1[filename]['data'].keys())
-    #
-    #     with open(f"{self.LE_file_path.text()[:-4]}.pickle", "wb") as outfile:
-    #         pickle.dump(self.all_files1[filename], outfile)
-    #         print("Pickle file generated to load later after this session")
-    #
-    #     # QtWidgets.QMessageBox.information(self,
-    #     #                                   "Success",
-    #     #                                   "File loaded successfully, you can add more files/proceed to plotting")
-    #
-    #     self.number_of_files += 1
-    #     self.label_list_of_files.setText(self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
-    #     return
-    #
-    # #################################################################################################
+        filename = self.LE_file_path.text().split('/')[-1][:-4]
+        print(f"For {filename}, starting calculations")
 
-    #################################################################################################
-    #  Tab-2 -> Signal plotting tab:
-    #################################################################################################
+        df_dict['Time'] = self.com.time
+
+        count = 0
+        for i in range(self.LW_voltage_set.count()):
+            if i % 3 == 0:
+                count += 1
+                df_dict[f'Va{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
+            if i % 3 == 1:
+                df_dict[f'Vb{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
+            if i % 3 == 2:
+                df_dict[f'Vc{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
+
+        for i in range(count):
+            df_dict[f'RMS_voltage {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Va{i + 1}'],
+                                                                     df_dict[f'Vb{i + 1}'], df_dict[f'Vc{i + 1}'])
+        print(f"Instantaneous, RMS voltage: ✓")
+
+        count = 0
+        for i in range(self.LW_current_set.count()):
+            if i % 3 == 0:
+                count += 1
+                df_dict[f'Ia{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
+            if i % 3 == 1:
+                df_dict[f'Ib{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
+            if i % 3 == 2:
+                df_dict[f'Ic{count}'] = np.array(self.com.analog[
+                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
+
+        for i in range(count):
+            df_dict[f'RMS_current {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Ia{i + 1}'],
+                                                                     df_dict[f'Ib{i + 1}'], df_dict[f'Ic{i + 1}'])
+        print(f"Instantaneous, RMS current: ✓")
+
+        df = pd.DataFrame(df_dict)
+        # For derived quantities calculations:
+        power_input = list(eval(self.LE_power_selection.text()))
+        if type(power_input[0]) == int:
+
+            if power_input[0] > number_of_voltage_sets or power_input[1] > number_of_current_sets:
+                QtWidgets.QMessageBox.information(self, "Error", "Please input proper values for power calculation")
+            try:
+                va, vb, vc = df[f'Va{power_input[0]}'], df[f'Vb{power_input[0]}'], df[f'Vc{power_input[0]}']
+                ia, ib, ic = df[f'Ia{power_input[1]}'], df[f'Ib{power_input[1]}'], df[f'Ic{power_input[1]}']
+
+                df["Real power"], df['Reactive power'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
+                print(f"Power: ✓")
+
+                df["Z (Impedance)"] = ppf.impedance(va, vb, vc, ia, ib, ic)
+                print(f"Impedance: ✓")
+
+                df["DFT Va"] = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
+                df["DFT Vb"] = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
+                df["DFT Vc"] = ppf.window_phasor(np.array(vc), np.array(df['Time']), 1, 1)[0]
+                df["DFT Ia"] = ppf.window_phasor(np.array(ia), np.array(df['Time']), 1, 1)[0]
+                df["DFT Ib"] = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
+                df["DFT Ic"] = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
+
+                print(f"DFT of instantaneous signals: ✓")
+
+                df["DFT voltage RMS"] = ppf.instaLL_RMSVoltage(np.array(df['Time']),
+                                                               np.abs(df["DFT Va"]),
+                                                               np.abs(df["DFT Vb"]),
+                                                               np.abs(df["DFT Vc"]), )
+                print(f"RMS voltage using DFT: ✓")
+
+                df["DFT current RMS"] = ppf.insta_RMSCurrent(np.array(df['Time']),
+                                                             np.abs(df["DFT Ia"]),
+                                                             np.abs(df["DFT Ib"]),
+                                                             np.abs(df["DFT Ic"]), )
+                print(f"RMS current using DFT: ✓")
+
+                df['Positive sequence V'], df['Negative sequence V'], df['Zero sequence V'] = ppf.sequencetransform(
+                    df['Time'], df["DFT Va"], df["DFT Vb"], df["DFT Vc"])
+                print(f"Sequence transform (Voltage): ✓")
+
+                df['Positive sequence I'], df['Negative sequence I'], df['Zero sequence I'] = ppf.sequencetransform(
+                    df['Time'], df["DFT Ia"], df["DFT Ib"], df["DFT Ic"])
+                print(f"Sequence transform (Current): ✓")
+
+                fa = ppf.freq4mdftPhasor(np.array(df["DFT Va"]), np.array(df['Time']), 1)[0]
+                fb = ppf.freq4mdftPhasor(np.array(df["DFT Vb"]), np.array(df['Time']), 1)[0]
+                fc = ppf.freq4mdftPhasor(np.array(df["DFT Vc"]), np.array(df['Time']), 1)[0]
+
+                fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]
+                fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
+                fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
+
+                f = (fa + fb + fc) / 3
+
+                df[f'Frequency F_avg'] = np.real(f)
+                print(f"Frequency: ✓")
+
+            except KeyError as err:
+                QtWidgets.QMessageBox.information(self,
+                                                  "Error",
+                                                  "Didn't obtain correct number of values, please check your input lists")
+                return
+        elif type(power_input[0]) == list:
+            for _ in range(len(power_input)):
+                print(f"\n---------------------------\nCalculations for set {_ + 1}\n---------------------------")
+                try:
+                    va, vb, vc = df[f'Va{power_input[_][0]}'], df[f'Vb{power_input[_][0]}'], df[
+                        f'Vc{power_input[_][0]}']
+                    ia, ib, ic = df[f'Ia{power_input[_][1]}'], df[f'Ib{power_input[_][1]}'], df[
+                        f'Ic{power_input[_][1]}']
+
+                    df[f"Real power {_ + 1}"], df[f'Reactive power {_ + 1}'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
+                    print(f"Power: ✓")
+
+                    df[f"Z (Impedance) {_ + 1}"] = ppf.impedance(va, vb, vc, ia, ib, ic)
+                    print(f"Impedance: ✓")
+
+                    df[f"DFT Ia {_ + 1}"] = ppf.window_phasor(np.array(ia), np.array(df['Time']), 1, 1)[0]
+                    df[f"DFT Ib {_ + 1}"] = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
+                    df[f"DFT Ic {_ + 1}"] = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
+                    df[f"DFT Va {_ + 1}"] = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
+                    df[f"DFT Vb {_ + 1}"] = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
+                    df[f"DFT Vc {_ + 1}"] = ppf.window_phasor(np.array(vc), np.array(df['Time']), 1, 1)[0]
+                    print(f"DFT of instantaneous signals: ✓")
+
+                    df[f"DFT voltage RMS {_ + 1}"] = ppf.instaLL_RMSVoltage(np.array(df['Time']),
+                                                                            np.abs(df[f"DFT Va {_ + 1}"]),
+                                                                            np.abs(df[f"DFT Vb {_ + 1}"]),
+                                                                            np.abs(df[f"DFT Vc {_ + 1}"]), )
+                    print(f"RMS voltage using DFT: ✓")
+
+                    df[f"DFT current RMS {_ + 1}"] = ppf.insta_RMSCurrent(np.array(df['Time']),
+                                                                          np.abs(df[f"DFT Ia {_ + 1}"]),
+                                                                          np.abs(df[f"DFT Ib {_ + 1}"]),
+                                                                          np.abs(df[f"DFT Ic {_ + 1}"]), )
+                    print(f"RMS current using DFT: ✓")
+
+                    df[f'Positive sequence V {_ + 1}'], \
+                    df[f'Negative sequence V {_ + 1}'], \
+                    df[f'Zero sequence V {_ + 1}'] = ppf.sequencetransform(df['Time'],
+                                                                           df[f"DFT Va {_ + 1}"],
+                                                                           df[f"DFT Vb {_ + 1}"],
+                                                                           df[f"DFT Vc {_ + 1}"])
+                    print(f"Sequence transform (Voltage): ✓")
+                    df[f'Positive sequence I {_ + 1}'], \
+                    df[f'Negative sequence I {_ + 1}'], \
+                    df[f'Zero sequence I {_ + 1}'] = ppf.sequencetransform(df['Time'],
+                                                                           df[f"DFT Ia {_ + 1}"],
+                                                                           df[f"DFT Ib {_ + 1}"],
+                                                                           df[f"DFT Ic {_ + 1}"])
+                    print(f"Sequence transform (Current): ✓")
+
+                    fa = ppf.freq4mdftPhasor(df[f"DFT Va {_ + 1}"], np.array(df['Time']), 1)[0]
+                    fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]  # Replaces the rise cycle and Nan values to first Non Nan value.
+                    fb = ppf.freq4mdftPhasor(df[f"DFT Vb {_ + 1}"], np.array(df['Time']), 1)[0]
+                    fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
+                    fc = ppf.freq4mdftPhasor(df[f"DFT Vc {_ + 1}"], np.array(df['Time']), 1)[0]
+                    fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
+
+                    f = (fa + fb + fc) / 3
+
+                    df[f'Frequency F_avg{_ + 1}'] = np.real(f)
+                    print(f"Frequency: ✓")
+
+                except KeyError as err:
+                    QtWidgets.QMessageBox.information(self,
+                                                      "Error",
+                                                      "Didn't obtain correct number of values, please check your input lists")
+                    return
+
+        shifting_values = {item: 0 for item in df.columns[1:]}
+        shifting_values['x'] = 0
+
+        scaling_values = {item: 1 for item in df.columns[1:]}
+
+        self.all_files1[filename] = dict(data=df,
+                                         shift_values=shifting_values,
+                                         scaling_values=scaling_values,
+                                         color_dict=self.color_list[self.color_index])
+
+        self.color_index += 1
+        self.file_names = list(self.all_files1.keys())
+        self.list_of_files.clear()
+        self.list_of_files.addItems([""] + self.file_names)
+        self.groupBox.setEnabled(True)
+
+        self.CB_instantaneous_tab.clear()
+        self.CB_instantaneous_tab.addItems([""] + self.file_names)
+
+        print(self.all_files1[filename]['data'].keys())
+
+        with open(f"{self.LE_file_path.text()[:-4]}.pickle", "wb") as outfile:
+            pickle.dump(self.all_files1[filename], outfile)
+            print("Pickle file generated to load later after this session")
+
+        self.showMessage()
+        self.number_of_files += 1
+        self.label_list_of_files.setText(self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
+        return
+
+    def showMessage(self):
+        QtWidgets.QMessageBox.information(self,
+                                          "Success",
+                                          "File loaded successfully, you can add more files/proceed to plotting")
+
+    ################################################################################################
+    # Tab-2 -> Signal plotting tab:
+    ################################################################################################
     def plot_signal(self, ):
         # Calling function depending on the checkbox selected
         if self.CB_voltage_rms.isChecked():
@@ -623,6 +614,8 @@ class MainWindow(QtWidgets.QMainWindow):
         :return:
         """
         try:
+            # direction = 1 if direction in ["up", "UP", "Up"] else -1
+
             shift = direction * float(self.LE_shift_value.text())
             new_val = float(self.y_shift_value.text()) + shift
 
@@ -688,6 +681,8 @@ class MainWindow(QtWidgets.QMainWindow):
     #  Tab-3 -> Instantaneous plots tab:
     #################################################################################################
     def plot_instantaneous(self):
+        # TODO: rename self.layout2 to something appropriate
+
         file = self.CB_instantaneous_tab.currentText()
 
         if file == "":
@@ -886,238 +881,6 @@ class DeselectableTreeView(QtWidgets.QListWidget):
         if not self.indexAt(event.pos()).isValid():
             self.clearSelection()
 
-class Worker(QtCore.QObject):
-    finished = QtCore.pyqtSignal()
-    intReady = QtCore.pyqtSignal(int)
-
-    @QtCore.pyqtSlot()
-    def _compute_values(self, file_calculation_progress, LW_voltage_set, LW_current_set, file_path, com, power_selection):
-        print(file_calculation_progress, LW_voltage_set, LW_current_set, file_path, com, power_selection)
-        file_calculation_progress.clear()
-        df_dict = {}
-        number_of_voltage_sets = self.LW_voltage_set.count() // 3
-        number_of_current_sets = self.LW_current_set.count() // 3
-
-        filename = self.LE_file_path.text().split('/')[-1][:-4]
-        self.file_calculation_progress.setText(f"For {filename}, starting calculations")
-
-        df_dict['Time'] = self.com.time
-
-        count = 0
-        for i in range(self.LW_voltage_set.count()):
-            if i % 3 == 0:
-                count += 1
-                df_dict[f'Va{count}'] = np.array(self.com.analog[
-                                                     self.com.analog_channel_ids.index(
-                                                         self.LW_voltage_set.item(i).text())]) / 1000
-            if i % 3 == 1:
-                df_dict[f'Vb{count}'] = np.array(self.com.analog[
-                                                     self.com.analog_channel_ids.index(
-                                                         self.LW_voltage_set.item(i).text())]) / 1000
-            if i % 3 == 2:
-                df_dict[f'Vc{count}'] = np.array(self.com.analog[
-                                                     self.com.analog_channel_ids.index(
-                                                         self.LW_voltage_set.item(i).text())]) / 1000
-
-        for i in range(count):
-            df_dict[f'RMS_voltage {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Va{i + 1}'],
-                                                                     df_dict[f'Vb{i + 1}'], df_dict[f'Vc{i + 1}'])
-        self.file_calculation_progress.append(f"Instantaneous, RMS voltage: ✓")
-
-        count = 0
-        for i in range(self.LW_current_set.count()):
-            if i % 3 == 0:
-                count += 1
-                df_dict[f'Ia{count}'] = np.array(self.com.analog[
-                                                     self.com.analog_channel_ids.index(
-                                                         self.LW_current_set.item(i).text())]) / 1000
-            if i % 3 == 1:
-                df_dict[f'Ib{count}'] = np.array(self.com.analog[
-                                                     self.com.analog_channel_ids.index(
-                                                         self.LW_current_set.item(i).text())]) / 1000
-            if i % 3 == 2:
-                df_dict[f'Ic{count}'] = np.array(self.com.analog[
-                                                     self.com.analog_channel_ids.index(
-                                                         self.LW_current_set.item(i).text())]) / 1000
-
-        for i in range(count):
-            df_dict[f'RMS_current {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Ia{i + 1}'],
-                                                                     df_dict[f'Ib{i + 1}'], df_dict[f'Ic{i + 1}'])
-        self.file_calculation_progress.append(f"Instantaneous, RMS current: ✓")
-
-        df = pd.DataFrame(df_dict)
-        # For derived quantities calculations:
-        power_input = list(eval(self.LE_power_selection.text()))
-        if type(power_input[0]) == int:
-            if power_input[0] > number_of_voltage_sets or power_input[1] > number_of_current_sets:
-                QtWidgets.QMessageBox.information(self, "Error", "Please input proper values for power calculation")
-            try:
-                va, vb, vc = df[f'Va{power_input[0]}'], df[f'Vb{power_input[0]}'], df[f'Vc{power_input[0]}']
-                ia, ib, ic = df[f'Ia{power_input[1]}'], df[f'Ib{power_input[1]}'], df[f'Ic{power_input[1]}']
-
-                df["Real power"], df['Reactive power'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
-                self.file_calculation_progress.append(f"Power: ✓")
-
-                df["Z (Impedance)"] = ppf.impedance(va, vb, vc, ia, ib, ic)
-                self.file_calculation_progress.append(f"Impedance: ✓")
-
-                df["DFT Va"] = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
-                df["DFT Vb"] = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
-                df["DFT Vc"] = ppf.window_phasor(np.array(vc), np.array(df['Time']), 1, 1)[0]
-                df["DFT Ia"] = ppf.window_phasor(np.array(ia), np.array(df['Time']), 1, 1)[0]
-                df["DFT Ib"] = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
-                df["DFT Ic"] = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
-
-                self.file_calculation_progress.append(f"DFT of instantaneous signals: ✓")
-
-                df["DFT voltage RMS"] = ppf.instaLL_RMSVoltage(np.array(df['Time']),
-                                                               np.abs(df["DFT Va"]),
-                                                               np.abs(df["DFT Vb"]),
-                                                               np.abs(df["DFT Vc"]), )
-                self.file_calculation_progress.append(f"RMS voltage using DFT: ✓")
-
-                df["DFT current RMS"] = ppf.insta_RMSCurrent(np.array(df['Time']),
-                                                             np.abs(df["DFT Ia"]),
-                                                             np.abs(df["DFT Ib"]),
-                                                             np.abs(df["DFT Ic"]), )
-                self.file_calculation_progress.append(f"RMS current using DFT: ✓")
-
-                df['Positive sequence V'], df['Negative sequence V'], df['Zero sequence V'] = ppf.sequencetransform(
-                    df['Time'], df["DFT Va"], df["DFT Vb"], df["DFT Vc"])
-                self.file_calculation_progress.append(f"Sequence transform (Voltage): ✓")
-
-                df['Positive sequence I'], df['Negative sequence I'], df['Zero sequence I'] = ppf.sequencetransform(
-                    df['Time'], df["DFT Ia"], df["DFT Ib"], df["DFT Ic"])
-                self.file_calculation_progress.append(f"Sequence transform (Current): ✓")
-
-                fa = ppf.freq4mdftPhasor(np.array(df["DFT Va"]), np.array(df['Time']), 1)[0]
-                fb = ppf.freq4mdftPhasor(np.array(df["DFT Vb"]), np.array(df['Time']), 1)[0]
-                fc = ppf.freq4mdftPhasor(np.array(df["DFT Vc"]), np.array(df['Time']), 1)[0]
-
-                fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]
-                fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
-                fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
-
-                f = (fa + fb + fc) / 3
-
-                df[f'Frequency F_avg'] = np.real(f)
-                self.file_calculation_progress.append(f"Frequency: ✓")
-
-            except KeyError as err:
-                QtWidgets.QMessageBox.information(self,
-                                                  "Error",
-                                                  "Didn't obtain correct number of values, please check your input lists")
-                return
-        elif type(power_input[0]) == list:
-            for _ in range(len(power_input)):
-                self.file_calculation_progress.append(
-                    f"\n---------------------------\nCalculations for set {_ + 1}\n---------------------------")
-                print(_)
-                try:
-                    print("Starting calc")
-                    va, vb, vc = df[f'Va{power_input[_][0]}'], df[f'Vb{power_input[_][0]}'], df[
-                        f'Vc{power_input[_][0]}']
-                    ia, ib, ic = df[f'Ia{power_input[_][1]}'], df[f'Ib{power_input[_][1]}'], df[
-                        f'Ic{power_input[_][1]}']
-
-                    df[f"Real power {_ + 1}"], df[f'Reactive power {_ + 1}'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
-                    self.file_calculation_progress.append(f"Power: ✓")
-                    self.file_calculation_progress.show()
-
-                    df[f"Z (Impedance) {_ + 1}"] = ppf.impedance(va, vb, vc, ia, ib, ic)
-                    self.file_calculation_progress.append(f"Impedance: ✓")
-
-                    df[f"DFT Ia {_ + 1}"] = ppf.window_phasor(np.array(ia), np.array(df['Time']), 1, 1)[0]
-                    df[f"DFT Ib {_ + 1}"] = ppf.window_phasor(np.array(ib), np.array(df['Time']), 1, 1)[0]
-                    df[f"DFT Ic {_ + 1}"] = ppf.window_phasor(np.array(ic), np.array(df['Time']), 1, 1)[0]
-                    df[f"DFT Va {_ + 1}"] = ppf.window_phasor(np.array(va), np.array(df['Time']), 1, 1)[0]
-                    df[f"DFT Vb {_ + 1}"] = ppf.window_phasor(np.array(vb), np.array(df['Time']), 1, 1)[0]
-                    df[f"DFT Vc {_ + 1}"] = ppf.window_phasor(np.array(vc), np.array(df['Time']), 1, 1)[0]
-                    self.file_calculation_progress.append(f"DFT of instantaneous signals: ✓")
-                    print("DFT")
-
-                    df[f"DFT voltage RMS {_ + 1}"] = ppf.instaLL_RMSVoltage(np.array(df['Time']),
-                                                                            np.abs(df[f"DFT Va {_ + 1}"]),
-                                                                            np.abs(df[f"DFT Vb {_ + 1}"]),
-                                                                            np.abs(df[f"DFT Vc {_ + 1}"]), )
-                    self.file_calculation_progress.append(f"RMS voltage using DFT: ✓")
-
-                    df[f"DFT current RMS {_ + 1}"] = ppf.insta_RMSCurrent(np.array(df['Time']),
-                                                                          np.abs(df[f"DFT Ia {_ + 1}"]),
-                                                                          np.abs(df[f"DFT Ib {_ + 1}"]),
-                                                                          np.abs(df[f"DFT Ic {_ + 1}"]), )
-                    self.file_calculation_progress.append(f"RMS current using DFT: ✓")
-
-                    df[f'Positive sequence V {_ + 1}'], \
-                    df[f'Negative sequence V {_ + 1}'], \
-                    df[f'Zero sequence V {_ + 1}'] = ppf.sequencetransform(df['Time'],
-                                                                           df[f"DFT Va {_ + 1}"],
-                                                                           df[f"DFT Vb {_ + 1}"],
-                                                                           df[f"DFT Vc {_ + 1}"])
-                    self.file_calculation_progress.append(f"Sequence transform (Voltage): ✓")
-                    print("Sequence V")
-                    df[f'Positive sequence I {_ + 1}'], \
-                    df[f'Negative sequence I {_ + 1}'], \
-                    df[f'Zero sequence I {_ + 1}'] = ppf.sequencetransform(df['Time'],
-                                                                           df[f"DFT Ia {_ + 1}"],
-                                                                           df[f"DFT Ib {_ + 1}"],
-                                                                           df[f"DFT Ic {_ + 1}"])
-                    self.file_calculation_progress.append(f"Sequence transform (Current): ✓")
-                    print("Sequence I")
-
-                    fa = ppf.freq4mdftPhasor(df[f"DFT Va {_ + 1}"], np.array(df['Time']), 1)[0]
-                    fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][
-                                                                       0] + 1]  # Replaces the rise cycle and Nan values to first Non Nan value.
-                    fb = ppf.freq4mdftPhasor(df[f"DFT Vb {_ + 1}"], np.array(df['Time']), 1)[0]
-                    fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
-                    fc = ppf.freq4mdftPhasor(df[f"DFT Vc {_ + 1}"], np.array(df['Time']), 1)[0]
-                    fc[:np.argwhere(np.isnan(fc))[-1][0] + 1] = fc[np.argwhere(np.isnan(fc))[-1][0] + 1]
-
-                    f = (fa + fb + fc) / 3
-
-                    df[f'Frequency F_avg{_ + 1}'] = np.real(f)
-                    self.file_calculation_progress.append(f"Frequency: ✓")
-
-                except KeyError as err:
-                    QtWidgets.QMessageBox.information(self,
-                                                      "Error",
-                                                      "Didn't obtain correct number of values, please check your input lists")
-                    return
-
-        shifting_values = {item: 0 for item in df.columns[1:]}
-        shifting_values['x'] = 0
-
-        scaling_values = {item: 1 for item in df.columns[1:]}
-
-        self.all_files1[filename] = dict(data=df,
-                                         shift_values=shifting_values,
-                                         scaling_values=scaling_values,
-                                         color_dict=self.color_list[self.color_index])
-
-        self.color_index += 1
-        self.file_names = list(self.all_files1.keys())
-        self.list_of_files.clear()
-        self.list_of_files.addItems([""] + self.file_names)
-        self.groupBox.setEnabled(True)
-
-        self.CB_instantaneous_tab.clear()
-        self.CB_instantaneous_tab.addItems([""] + self.file_names)
-
-        print(self.all_files1[filename]['data'].keys())
-
-        with open(f"{self.LE_file_path.text()[:-4]}.pickle", "wb") as outfile:
-            pickle.dump(self.all_files1[filename], outfile)
-            print("Pickle file generated to load later after this session")
-
-        # QtWidgets.QMessageBox.information(self,
-        #                                   "Success",
-        #                                   "File loaded successfully, you can add more files/proceed to plotting")
-
-        self.number_of_files += 1
-        self.label_list_of_files.setText(self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
-        return
-
-        #################################################################################################
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
