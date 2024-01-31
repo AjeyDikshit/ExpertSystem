@@ -13,6 +13,7 @@ import numpy as np
 import pyqtgraph as pg
 import pickle
 from comtrade import Comtrade, ComtradeError
+from pprint import pprint
 
 import PPF as ppf
 import segmentation_functions as segment_function
@@ -53,7 +54,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LE_power_selection.setEnabled(False)
 
         # Signals
-        self.browse_file_location.clicked.connect(self.get_file)
+        self.PB_browse_file_location.clicked.connect(self.get_file)
         self.PB_load_file.clicked.connect(self.load_file)
         self.PB_move_to_voltage.clicked.connect(self.move_to_voltage)
         self.PB_move_to_current.clicked.connect(self.move_to_current)
@@ -103,7 +104,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.PB_scale_signal.clicked.connect(self.scale_signal)
 
-        self.list_of_files.activated.connect(self.load_signals)
+        self.ComB_list_of_files.activated.connect(self.load_signals)
 
         self.PB_hide_gb1.clicked.connect(self.hide_gb1)
 
@@ -114,9 +115,15 @@ class MainWindow(QtWidgets.QMainWindow):
         #################################################################################################
         self.PB_add_instantaneous_plots.clicked.connect(self.plot_instantaneous)
         self.PB_remove_instantaneous_plots.clicked.connect(self.remove_plot_instantaneous)
+
         self.scroll1 = QtWidgets.QScrollArea()
         self.verticalLayout_2.addWidget(self.scroll1)
+
         self.layout2 = QtWidgets.QVBoxLayout()
+        self.layout2.setAlignment(QtCore.Qt.AlignTop)
+        self.layout2.setSpacing(5)
+
+        self.plot_dict = {}
         self.plotted_plot = []
 
         #################################################################################################
@@ -124,8 +131,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #################################################################################################
         self.q, self.z1, self.threshold = None, None, None
 
-        self.plot_widget7.showGrid(x=True, y=True, alpha=1)
-        self.plot_widget8.showGrid(x=True, y=True, alpha=1)
+        self.PW_signal_segment.showGrid(x=True, y=True, alpha=1)
+        self.PW_difference_segment.showGrid(x=True, y=True, alpha=1)
 
         self.CB_segment_voltage.stateChanged.connect(
             lambda: self.calculate_segmentation("RMS_voltage", self.CB_segment_voltage))
@@ -186,11 +193,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.all_files1[filename] = pickle.load(infile)
 
             self.file_names = list(self.all_files1.keys())
-            self.list_of_files.clear()
-            self.list_of_files.addItems([""] + self.file_names)
+            self.ComB_list_of_files.clear()
+            self.ComB_list_of_files.addItems([""] + self.file_names)
 
-            self.CB_instantaneous_tab.clear()
-            self.CB_instantaneous_tab.addItems([""] + self.file_names)
+            self.ComB_instantaneous_tab.clear()
+            self.ComB_instantaneous_tab.addItems([""] + self.file_names)
 
             self.groupBox.setEnabled(True)
 
@@ -266,13 +273,16 @@ class MainWindow(QtWidgets.QMainWindow):
             if i % 3 == 0:
                 count += 1
                 df_dict[f'Va{count}'] = np.array(self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
+                                                     self.com.analog_channel_ids.index(
+                                                         self.LW_voltage_set.item(i).text())]) / 1000
             if i % 3 == 1:
                 df_dict[f'Vb{count}'] = np.array(self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
+                                                     self.com.analog_channel_ids.index(
+                                                         self.LW_voltage_set.item(i).text())]) / 1000
             if i % 3 == 2:
                 df_dict[f'Vc{count}'] = np.array(self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_voltage_set.item(i).text())]) / 1000
+                                                     self.com.analog_channel_ids.index(
+                                                         self.LW_voltage_set.item(i).text())]) / 1000
 
         for i in range(count):
             df_dict[f'RMS_voltage {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Va{i + 1}'],
@@ -284,13 +294,16 @@ class MainWindow(QtWidgets.QMainWindow):
             if i % 3 == 0:
                 count += 1
                 df_dict[f'Ia{count}'] = np.array(self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
+                                                     self.com.analog_channel_ids.index(
+                                                         self.LW_current_set.item(i).text())]) / 1000
             if i % 3 == 1:
                 df_dict[f'Ib{count}'] = np.array(self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
+                                                     self.com.analog_channel_ids.index(
+                                                         self.LW_current_set.item(i).text())]) / 1000
             if i % 3 == 2:
                 df_dict[f'Ic{count}'] = np.array(self.com.analog[
-                    self.com.analog_channel_ids.index(self.LW_current_set.item(i).text())]) / 1000
+                                                     self.com.analog_channel_ids.index(
+                                                         self.LW_current_set.item(i).text())]) / 1000
 
         for i in range(count):
             df_dict[f'RMS_current {i + 1}'] = ppf.instaLL_RMSVoltage(df_dict['Time'], df_dict[f'Ia{i + 1}'],
@@ -412,7 +425,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     print(f"Sequence transform (Current): ✓")
 
                     fa = ppf.freq4mdftPhasor(df[f"DFT Va {_ + 1}"], np.array(df['Time']), 1)[0]
-                    fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][0] + 1]  # Replaces the rise cycle and Nan values to first Non Nan value.
+                    fa[:np.argwhere(np.isnan(fa))[-1][0] + 1] = fa[np.argwhere(np.isnan(fa))[-1][
+                                                                       0] + 1]  # Replaces the rise cycle and Nan values to first Non Nan value.
                     fb = ppf.freq4mdftPhasor(df[f"DFT Vb {_ + 1}"], np.array(df['Time']), 1)[0]
                     fb[:np.argwhere(np.isnan(fb))[-1][0] + 1] = fb[np.argwhere(np.isnan(fb))[-1][0] + 1]
                     fc = ppf.freq4mdftPhasor(df[f"DFT Vc {_ + 1}"], np.array(df['Time']), 1)[0]
@@ -441,12 +455,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.color_index += 1
         self.file_names = list(self.all_files1.keys())
-        self.list_of_files.clear()
-        self.list_of_files.addItems([""] + self.file_names)
+        self.ComB_list_of_files.clear()
+        self.ComB_list_of_files.addItems([""] + self.file_names)
         self.groupBox.setEnabled(True)
 
-        self.CB_instantaneous_tab.clear()
-        self.CB_instantaneous_tab.addItems([""] + self.file_names)
+        self.ComB_instantaneous_tab.clear()
+        self.ComB_instantaneous_tab.addItems([""] + self.file_names)
 
         print(self.all_files1[filename]['data'].keys())
 
@@ -596,11 +610,12 @@ class MainWindow(QtWidgets.QMainWindow):
         :param direction: -1 to move left, +1 to move right
         :return:
         """
+        # TODO: Fix bug, when moving right it is first moving left till reaching 0 then shifting right. (line 614)
         try:
             shift = direction * float(self.LE_shift_value.text())
             new_val = round(float(self.x_shift_value.text()) + shift, 3)
             self.x_shift_value.setText(str(new_val))
-            self.all_files1[self.list_of_files.currentText()]['shift_values']['x'] = float(self.x_shift_value.text())
+            self.all_files1[self.ComB_list_of_files.currentText()]['shift_values']['x'] += float(self.x_shift_value.text())
             self.plot_signal()
 
         except KeyError as err:
@@ -620,8 +635,8 @@ class MainWindow(QtWidgets.QMainWindow):
             new_val = float(self.y_shift_value.text()) + shift
 
             self.y_shift_value.setText(str(new_val))
-            self.all_files1[self.list_of_files.currentText()]['shift_values'][
-                self.CB_signals_list.currentText()] = float(self.y_shift_value.text())
+            self.all_files1[self.ComB_list_of_files.currentText()]['shift_values'][
+                self.ComB_signals_list.currentText()] = float(self.y_shift_value.text())
             self.plot_signal()
 
         except KeyError as err:
@@ -634,8 +649,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.current_scale.setText(str(float(self.current_scale.text()) * float(self.LE_scaling_factor.text())))
             value = float(self.current_scale.text())
 
-            self.all_files1[self.list_of_files.currentText()]['scaling_values'][
-                self.CB_signals_list.currentText()] = value
+            self.all_files1[self.ComB_list_of_files.currentText()]['scaling_values'][
+                self.ComB_signals_list.currentText()] = value
 
             self.plot_signal()
 
@@ -645,11 +660,11 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Please select a file to shift.")
 
     def load_signals(self):
-        filename = self.list_of_files.currentText()
+        filename = self.ComB_list_of_files.currentText()
         self.x_shift_value.setText('0')
-        self.CB_signals_list.clear()
+        self.ComB_signals_list.clear()
         if filename != "":
-            self.CB_signals_list.addItems([""] + list(self.all_files1[filename]['shift_values'].keys())[:-1])
+            self.ComB_signals_list.addItems([""] + list(self.all_files1[filename]['shift_values'].keys())[:-1])
 
     def hide_gb1(self):
         if not self.hidden:
@@ -683,7 +698,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def plot_instantaneous(self):
         # TODO: rename self.layout2 to something appropriate
 
-        file = self.CB_instantaneous_tab.currentText()
+        file = self.ComB_instantaneous_tab.currentText()
 
         if file == "":
             QtWidgets.QMessageBox.information(self,
@@ -693,9 +708,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if file not in self.plotted_plot:
             self.plotted_plot.append(file)
-            layout = QtWidgets.QHBoxLayout()
+            if file not in self.plot_dict.keys():
+                self.plot_dict[file] = {"plots": [], "h_layout": []}
 
-            for val in ["V", "I"]:
+            num_of_sets = len([item for item in self.all_files1[file]['data'].keys() if item.startswith("V")]) // 3
+
+            for val in range(num_of_sets):
+                layout = QtWidgets.QHBoxLayout()
+
                 plot = pg.PlotWidget()
                 plot.addLegend(offset=(280, 8))
                 plot.setMinimumSize(480, 250)
@@ -705,7 +725,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 color_count = 0
 
                 for column in [item for item in self.all_files1[file]['data'].keys() if
-                               item.startswith(val)]:
+                               item.startswith("V") and item.endswith(str(val+1))]:
                     pen = pg.mkPen(color=colors[color_count], width=1.5)
                     plot.plot(
                         self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
@@ -714,30 +734,50 @@ class MainWindow(QtWidgets.QMainWindow):
                     color_count += 1
 
                 layout.addWidget(plot)
+                self.plot_dict[file]['plots'] += [plot]
 
-            self.layout2.addLayout(layout)
+                plot = pg.PlotWidget()
+                plot.addLegend(offset=(280, 8))
+                plot.setMinimumSize(480, 250)
+                plot.setMaximumSize(550, 280)
+
+                colors = ['r', 'y', 'b'] * 3
+                color_count = 0
+
+                for column in [item for item in self.all_files1[file]['data'].keys() if
+                               item.startswith("I") and item.endswith(str(val+1))]:
+                    pen = pg.mkPen(color=colors[color_count], width=1.5)
+                    plot.plot(
+                        self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                        self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                        pen=pen, name=file + f"_{column}")
+                    color_count += 1
+
+                self.plot_dict[file]['plots'] += [plot]
+                self.plot_dict[file]["h_layout"] += [layout]
+                layout.addWidget(plot)
+
+                self.layout2.addLayout(layout)
+
             scrollContent = QtWidgets.QWidget()
             scrollContent.setLayout(self.layout2)
             self.scroll1.setWidget(scrollContent)
 
+            print(self.plot_dict)
         else:
             QtWidgets.QMessageBox.information(self,
                                               "Error",
-                                              "Plot already plotted!")
+                                              "Plots already plotted!")
 
     def remove_plot_instantaneous(self):
-        h_layouts = self.scroll1.findChildren(QtWidgets.QHBoxLayout)
-        plot_layout = self.scroll1.findChildren(pg.PlotWidget)
-
-        file = self.CB_instantaneous_tab.currentText()
-
+        file = self.ComB_instantaneous_tab.currentText()
         if file in self.plotted_plot:
-            h_layout = h_layouts[self.plotted_plot.index(file)]
-            self.layout2.removeItem(h_layout)
-            plot_layout[0 + 2 * (self.plotted_plot.index(file))].deleteLater()
-            plot_layout[1 + 2 * (self.plotted_plot.index(file))].deleteLater()
+            for h_layout in self.plot_dict[file]["h_layout"]:
+                self.layout2.removeItem(h_layout)
+            for plot in self.plot_dict[file]['plots']:
+                plot.deleteLater()
             self.plotted_plot.remove(file)
-
+            del self.plot_dict[file]
         else:
             QtWidgets.QMessageBox.information(self,
                                               "Error",
@@ -747,12 +787,13 @@ class MainWindow(QtWidgets.QMainWindow):
     #  Tab-4 -> Segmentation tab:
     #################################################################################################
     def calculate_segmentation(self, signal, button):
+        # TODO: add the q values of each file in other variable which will store the q's of all the data (may not be required)
         if button.isChecked():  # Unchecking all checkboxes, and checking the checked checkbox
             self.set_checkboxes_unchecked()
             button.setChecked(True)
 
-        self.plot_widget7.clear()
-        self.plot_widget8.clear()
+        self.PW_signal_segment.clear()
+        self.PW_difference_segment.clear()
         self.LE_threshold_value.setText("")
 
         for file in self.file_names:
@@ -765,12 +806,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.plot_segmentation(file, column, pen)
 
         if not any([button.isChecked() for button in self.tab_3.findChildren(QtWidgets.QCheckBox)]):
-            self.plot_widget7.clear()
-            self.plot_widget8.clear()
+            self.PW_signal_segment.clear()
+            self.PW_difference_segment.clear()
 
     def calculate_manual_segmentation(self, signal):
-        self.plot_widget7.clear()
-        self.plot_widget8.clear()
+        self.PW_signal_segment.clear()
+        self.PW_difference_segment.clear()
 
         self.threshold = float(self.LE_threshold_value.text())
 
@@ -789,45 +830,45 @@ class MainWindow(QtWidgets.QMainWindow):
         threshold_pen = pg.mkPen(color=(0, 94, 255), width=1.5)
         segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)
 
-        self.plot_widget7.plot(
+        self.PW_signal_segment.plot(
             self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
             (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
             self.all_files1[file]['scaling_values'][column],
             pen=pen, name=file + f"_{column}")
 
-        self.plot_widget8.plot(
+        self.PW_difference_segment.plot(
             self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
             self.z1,
             pen=pen)
-        self.plot_widget8.plot(
+        self.PW_difference_segment.plot(
             self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
             [self.threshold] * len(
                 self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x']),
             pen=threshold_pen)
 
         for i in range(len(self.q)):
-            self.plot_widget7.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
-                                    self.all_files1[file]['shift_values']['x']] * 3,
-                                   np.linspace(min(self.all_files1[file]['data'][column] +
-                                                   self.all_files1[file]['shift_values'][column]),
-                                               max(self.all_files1[file]['data'][column] +
-                                                   self.all_files1[file]['shift_values'][column]), 3),
-                                   pen=segment_pen)
+            self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
+                                         self.all_files1[file]['shift_values']['x']] * 3,
+                                        np.linspace(min(self.all_files1[file]['data'][column] +
+                                                        self.all_files1[file]['shift_values'][column]),
+                                                    max(self.all_files1[file]['data'][column] +
+                                                        self.all_files1[file]['shift_values'][column]), 3),
+                                        pen=segment_pen)
 
-            self.plot_widget7.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
-                                    self.all_files1[file]['shift_values']['x']] * 3,
-                                   np.linspace(min(self.all_files1[file]['data'][column] +
-                                                   self.all_files1[file]['shift_values'][column]),
-                                               max(self.all_files1[file]['data'][column] +
-                                                   self.all_files1[file]['shift_values'][column]), 3),
-                                   pen=segment_pen)
+            self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
+                                         self.all_files1[file]['shift_values']['x']] * 3,
+                                        np.linspace(min(self.all_files1[file]['data'][column] +
+                                                        self.all_files1[file]['shift_values'][column]),
+                                                    max(self.all_files1[file]['data'][column] +
+                                                        self.all_files1[file]['shift_values'][column]), 3),
+                                        pen=segment_pen)
 
-            self.plot_widget8.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
-                                    self.all_files1[file]['shift_values']['x']] * 3,
-                                   np.linspace(0, max(self.z1), 3), pen=segment_pen)
-            self.plot_widget8.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
-                                    self.all_files1[file]['shift_values']['x']] * 3,
-                                   np.linspace(0, max(self.z1), 3), pen=segment_pen)
+            self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
+                                             self.all_files1[file]['shift_values']['x']] * 3,
+                                            np.linspace(0, max(self.z1), 3), pen=segment_pen)
+            self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
+                                             self.all_files1[file]['shift_values']['x']] * 3,
+                                            np.linspace(0, max(self.z1), 3), pen=segment_pen)
 
     def manual_segmentation(self):
         if self.CB_segment_voltage.isChecked():

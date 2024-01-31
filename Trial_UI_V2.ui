@@ -30,7 +30,7 @@
      <string notr="true"/>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -52,7 +52,7 @@
        <bool>false</bool>
       </property>
      </widget>
-     <widget class="QPushButton" name="browse_file_location">
+     <widget class="QPushButton" name="PB_browse_file_location">
       <property name="geometry">
        <rect>
         <x>609</x>
@@ -987,7 +987,7 @@
          <enum>Qt::Vertical</enum>
         </property>
        </widget>
-       <widget class="QComboBox" name="list_of_files">
+       <widget class="QComboBox" name="ComB_list_of_files">
         <property name="geometry">
          <rect>
           <x>10</x>
@@ -1019,7 +1019,7 @@
          <string notr="true" extracomment="List of files"/>
         </property>
        </widget>
-       <widget class="QComboBox" name="CB_signals_list">
+       <widget class="QComboBox" name="ComB_signals_list">
         <property name="geometry">
          <rect>
           <x>10</x>
@@ -1557,7 +1557,7 @@
        <string>Add</string>
       </property>
      </widget>
-     <widget class="QComboBox" name="CB_instantaneous_tab">
+     <widget class="QComboBox" name="ComB_instantaneous_tab">
       <property name="geometry">
        <rect>
         <x>160</x>
@@ -1596,7 +1596,7 @@
      <attribute name="title">
       <string>Segmentation</string>
      </attribute>
-     <widget class="PlotWidget" name="plot_widget7" native="true">
+     <widget class="PlotWidget" name="PW_signal_segment" native="true">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -1618,7 +1618,7 @@
        </size>
       </property>
      </widget>
-     <widget class="PlotWidget" name="plot_widget8" native="true">
+     <widget class="PlotWidget" name="PW_difference_segment" native="true">
       <property name="geometry">
        <rect>
         <x>20</x>
