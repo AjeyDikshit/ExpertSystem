@@ -607,15 +607,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def move_horizontal(self, direction=1):
         """
+        Method used to shift the signals left/right manually for alignment.
         :param direction: -1 to move left, +1 to move right
         :return:
         """
-        # TODO: Fix bug, when moving right it is first moving left till reaching 0 then shifting right. (line 614)
         try:
+            if self.LE_shift_values.text() == "":
+                QtWidgets.QMessageBox.information(self,
+                                                  "Error",
+                                                  "Enter a valid shift value")
+
+                return
             shift = direction * float(self.LE_shift_value.text())
-            new_val = round(float(self.x_shift_value.text()) + shift, 3)
+
+            new_val = round(float(self.x_shift_value.text()) + shift, 4)
             self.x_shift_value.setText(str(new_val))
-            self.all_files1[self.ComB_list_of_files.currentText()]['shift_values']['x'] += float(self.x_shift_value.text())
+
+            self.all_files1[self.ComB_list_of_files.currentText()]['shift_values']['x'] += shift
+
             self.plot_signal()
 
         except KeyError as err:
@@ -625,18 +634,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def move_vertical(self, direction=1):
         """
+        Method used to shift the signals up/down manually for alignment.
         :param direction: +1 to move signal up, -1 to move signal down
         :return:
         """
         try:
-            # direction = 1 if direction in ["up", "UP", "Up"] else -1
+            if self.LE_shift_values.text() == "":
+                QtWidgets.QMessageBox.information(self,
+                                                  "Error",
+                                                  "Enter a valid shift value")
+                return
 
             shift = direction * float(self.LE_shift_value.text())
             new_val = float(self.y_shift_value.text()) + shift
 
             self.y_shift_value.setText(str(new_val))
+
             self.all_files1[self.ComB_list_of_files.currentText()]['shift_values'][
-                self.ComB_signals_list.currentText()] = float(self.y_shift_value.text())
+                self.ComB_signals_list.currentText()] += float(self.y_shift_value.text())
             self.plot_signal()
 
         except KeyError as err:
@@ -645,7 +660,14 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Please select a file to shift.")
 
     def scale_signal(self):
+
         try:
+            if self.current_scale.text() == "":
+                QtWidgets.QMessageBox.information(self,
+                                                  "Error",
+                                                  "Enter a valid shift value")
+                return
+
             self.current_scale.setText(str(float(self.current_scale.text()) * float(self.LE_scaling_factor.text())))
             value = float(self.current_scale.text())
 
