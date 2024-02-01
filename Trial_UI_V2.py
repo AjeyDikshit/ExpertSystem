@@ -1,10 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import os
-import time
 from pathlib import Path
 import sys
-import time
-import threading
 
 from PyQt5 import QtWidgets, QtCore
 from PyQt5 import uic
@@ -20,7 +17,6 @@ import segmentation_functions as segment_function
 # TODO: The whole codebase can be refactored
 # TODO: Remove the 0s in DFT (The "cycles" part)
 # TODO: Option to remove files if required
-# TODO: Improve save state: Store all files in a folder (name=datetime), and "load save state" browse the folder and load all the files directly.
 
 """
 The following code has been written in order of the tabs in the UI, to look for a specific tab just search "Tab-{Tab number}"
@@ -45,9 +41,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #################################################################################################
         #  General:
         #################################################################################################
-        self.set_checkboxes_unchecked()
-        # Tooltips:
-        self.load_tooltips()
+        self.load_tooltips()  # Loading all the tooltips
+
         self.com = Comtrade()  # Initializing at start so that it can be reused for all files.
         self.all_files1 = {}  # TODO: rename to better variable
         self.groupBox.setEnabled(False)
@@ -56,17 +51,21 @@ class MainWindow(QtWidgets.QMainWindow):
         #  Tab-1 -> User input area:
         #################################################################################################
         self.file_path = None  # File path of file, user is going to load
-        self.file_names = []
-        self.color_index = 0
+        self.file_names = []  # Store the names of files that are loaded/computed
+
+        # List consisting of different RGB values, duplicated 2 times, so total we have 20 colors
         self.color_list = [(222, 60, 0), (222, 60, 163), (200, 60, 222), (125, 114, 223), (71, 165, 247),
                            (20, 190, 209), (24, 255, 109), (168, 230, 76), (247, 255, 0), (255, 162, 0)] * 2
+        self.color_index = 0
+
         self.number_of_files = 0
-        self.timer = None
+
+        # Creating a set for the voltages, currents to avoid duplicate entries in the list widget.
         self.voltage_set_items = set()
         self.current_set_items = set()
         self.LE_power_selection.setEnabled(False)
 
-        # Signals
+        # Calling methods depending on what is clicked
         self.PB_browse_file_location.clicked.connect(self.get_file)
         self.PB_load_file.clicked.connect(self.load_file)
         self.PB_move_to_voltage.clicked.connect(self.move_to_voltage)
@@ -76,11 +75,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.LW_voltage_set.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         self.LW_current_set.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
-
         #################################################################################################
         #  Tab-2 -> Signal plotting tab:
         #################################################################################################
-        self.tab2_plots = self.scrollArea.findChildren(pg.PlotWidget)
+        self.tab2_plots = self.scrollArea.findChildren(pg.PlotWidget)  # Stores all the plots in the scroll area of tab-2 in sequential order
         for plot in self.tab2_plots:
             plot.showGrid(x=True, y=True, alpha=1)
 
@@ -89,7 +87,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.b = None
         self.label_option.setVisible(False)
 
-        # Signals
+        # Calling methods depending on what is clicked
         self.CB_voltage_rms.stateChanged.connect(self.plot_signal)
         self.CB_current_rms.stateChanged.connect(self.plot_signal)
         self.CB_voltage_rms_dft.stateChanged.connect(self.plot_signal)
@@ -129,24 +127,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.PB_add_instantaneous_plots.clicked.connect(self.plot_instantaneous)
         self.PB_remove_instantaneous_plots.clicked.connect(self.remove_plot_instantaneous)
 
+        # Preparing the scroll area
         self.scroll1 = QtWidgets.QScrollArea()
         self.verticalLayout_2.addWidget(self.scroll1)
 
+        # Preparing the vertical layout that will hold plots
         self.layout2 = QtWidgets.QVBoxLayout()
         self.layout2.setAlignment(QtCore.Qt.AlignTop)
         self.layout2.setSpacing(5)
 
+        # Variables to check which files have been plotted to avoid duplications
         self.plot_dict = {}
         self.plotted_plot = []
 
         #################################################################################################
         #  Tab-4 -> Segmentation tab:
         #################################################################################################
+        # Initializing the variables
         self.q, self.z1, self.threshold = None, None, None
 
+        # Adding grid to the plots
         self.PW_signal_segment.showGrid(x=True, y=True, alpha=1)
         self.PW_difference_segment.showGrid(x=True, y=True, alpha=1)
 
+        # Calling functions
         self.CB_segment_voltage.stateChanged.connect(
             lambda: self.calculate_segmentation("RMS_voltage", self.CB_segment_voltage))
         self.CB_segment_current.stateChanged.connect(
@@ -172,10 +176,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LE_file_path.setText(self.file_path)
 
         filename = self.LE_file_path.text().split('/')[-1][:-4]
-
-        # Creating a set for the voltages, currents to avoid duplicate entries in the list widget.
-        self.voltage_set_items = set([])
-        self.current_set_items = set([])
 
         try:
             self.com.load(self.file_path)  # Loading the comtrade object with the file.
@@ -636,14 +636,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_current_seq.clear()
 
     def plot_selected_signals(self, plotIndex, signal):
+        """
+        Helper function, which is actually plotting all the plots that are required.
+        All the parameters are being called appropriately in "plot_signal" method.
+        """
         if plotIndex in [0, 1, 2, 3, 4, 5]:
             self.tab2_plots[plotIndex].clear()
         self.tab2_plots[plotIndex].addLegend(offset=(350, 8))
 
+        # Looping through all files and plotting.
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith(signal)]:
-                if plotIndex in [7, 8]:
+                if plotIndex in [7, 8]:  # This conditional is required because Sequence transform required plotting the absolute value of the signal.
                     self.tab2_plots[plotIndex].plot(
                         self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
                         np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
@@ -660,7 +665,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Method used to shift the signals left/right manually for alignment.
         :param direction: -1 to move left, +1 to move right
-        :return:
         """
         try:
             if self.LE_shift_values.text() == "":
@@ -684,7 +688,6 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Method used to shift the signals up/down manually for alignment.
         :param direction: +1 to move signal up, -1 to move signal down
-        :return:
         """
         try:
             if self.LE_shift_values.text() == "":
@@ -707,7 +710,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Please select a file to shift.")
 
     def scale_signal(self):
-
+        """
+        Method used for scaling the selected signal of a particular file by some factor.
+        """
         try:
             if self.current_scale.text() == "":
                 QtWidgets.QMessageBox.information(self,
@@ -728,7 +733,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Error",
                                               "Please select a file to shift.")
 
-    def load_signals(self):
+    def load_signals(self):  # Populating the signals in combobox depending on the file selected
         filename = self.ComB_list_of_files.currentText()
         self.x_shift_value.setText('0')
         self.ComB_signals_list.clear()
@@ -736,6 +741,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ComB_signals_list.addItems([""] + list(self.all_files1[filename]['shift_values'].keys())[:-1])
 
     def hide_gb1(self):
+        # Method to collapse the plot-selection area (Not really required, but logic can be used in different UIs)
         if not self.hidden:
             self.groupBox.hide()
             self.PB_hide_gb1.setText('▽')
@@ -751,6 +757,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.groupBox_2.move(self.b)
 
     def save_state(self):
+        # Method to save the current visual state of the plots, to avoid aligning the signals everytime.
+        # TODO: Improve save state: Store all files in a folder (name=datetime), and add "load save state" button which allows to
+        #  browse the folder and load all the files directly.
         for filename in self.file_names:
             with open(fr"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\pickle files\{filename}.pickle",
                       "wb") as outfile:
