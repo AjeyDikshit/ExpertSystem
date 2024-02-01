@@ -13,16 +13,29 @@ import numpy as np
 import pyqtgraph as pg
 import pickle
 from comtrade import Comtrade, ComtradeError
-from pprint import pprint
 
 import PPF as ppf
 import segmentation_functions as segment_function
-
 
 # TODO: The whole codebase can be refactored
 # TODO: Remove the 0s in DFT (The "cycles" part)
 # TODO: Option to remove files if required
 # TODO: Improve save state: Store all files in a folder (name=datetime), and "load save state" browse the folder and load all the files directly.
+
+"""
+The following code has been written in order of the tabs in the UI, to look for a specific tab just search "Tab-{Tab number}"
+The first half of the code (the code inside __init__ method is responsible for calling all the function when a certain action is performed.
+
+There are some "rules" I have followed when naming the UI attributes, they are as follows:
+- LW: List Widget (Ex: LW_voltage_set => List widget which stores the voltages)
+- LE: Line Edit Widget (Ex: LE_power_selection => Line edit which takes the combination of voltages and current on which we should calculate Power, and some other derived quantities)
+- PB: Push button (Ex: PB_load_file)
+- TT: Tooltips
+- CB: Checkboxes (Ex: CB_voltage_rms => For plotting voltage rms)
+- ComB: Combo boxes (Ex: ComB_ComB_list_of_files => When the files are loaded, this will be populated with the same)
+- PW: Plot widgets (Ex: PW_voltage_rms => Plot widget corresponding to voltage rms plots)
+- labels have just been given appropriate names when required, and don't follow any rule
+"""
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -96,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.CB_current_negative.stateChanged.connect(self.plot_signal)
         self.CB_current_zero.stateChanged.connect(self.plot_signal)
 
-        self.PB_move_left.clicked.connect(lambda: self.move_horizontal(-1))
+        self.PB_move_left.clicked.connect(lambda: self.move_horizontal(-1))  # lambda functions are required here as I want to pass some arguments to the function, this is true for all the places' lambda function is called
         self.PB_move_right.clicked.connect(lambda: self.move_horizontal(1))
 
         self.PB_move_up.clicked.connect(lambda: self.move_vertical(1))
@@ -482,6 +495,7 @@ class MainWindow(QtWidgets.QMainWindow):
     # Tab-2 -> Signal plotting tab:
     ################################################################################################
     def plot_signal(self, ):
+        # TODO: Can be done=> Separate this method into smaller methods, which call particular plots. Ex: 1 method for Voltage_rms, 1 for current_rms and so on...
         # Calling function depending on the checkbox selected
         if self.CB_voltage_rms.isChecked():
             self.plot_selected_signals(0, "RMS_voltage")
@@ -747,7 +761,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 color_count = 0
 
                 for column in [item for item in self.all_files1[file]['data'].keys() if
-                               item.startswith("V") and item.endswith(str(val+1))]:
+                               item.startswith("V") and item.endswith(str(val + 1))]:
                     pen = pg.mkPen(color=colors[color_count], width=1.5)
                     plot.plot(
                         self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
@@ -767,7 +781,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 color_count = 0
 
                 for column in [item for item in self.all_files1[file]['data'].keys() if
-                               item.startswith("I") and item.endswith(str(val+1))]:
+                               item.startswith("I") and item.endswith(str(val + 1))]:
                     pen = pg.mkPen(color=colors[color_count], width=1.5)
                     plot.plot(
                         self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
@@ -808,8 +822,16 @@ class MainWindow(QtWidgets.QMainWindow):
     #################################################################################################
     #  Tab-4 -> Segmentation tab:
     #################################################################################################
+    # TODO: The next 2 methods can be merged into 1
+    #  Merge this and manual segmentation to one function, which takes in argument if threshold line edit,
+    #  if the value of line edit is empty, then perform automatic segmentation else perform manual segmentation
+
     def calculate_segmentation(self, signal, button):
         # TODO: add the q values of each file in other variable which will store the q's of all the data (may not be required)
+        """
+        Calculates the segments based on the automatically calculated threshold, which uses the formula of [std_dev + 5 * mean]
+        To change the default formula you can do so in "segmentation_functions.py" file on line 45
+        """
         if button.isChecked():  # Unchecking all checkboxes, and checking the checked checkbox
             self.set_checkboxes_unchecked()
             button.setChecked(True)
@@ -832,10 +854,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_difference_segment.clear()
 
     def calculate_manual_segmentation(self, signal):
+        """
+        Calculates the segments based on the user given threshold value
+        """
         self.PW_signal_segment.clear()
         self.PW_difference_segment.clear()
 
-        self.threshold = float(self.LE_threshold_value.text())
+        self.threshold = float(self.LE_threshold_value.text())  # Reading the user provided threshold value
 
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
@@ -849,26 +874,37 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.plot_segmentation(file, column, pen)
 
     def plot_segmentation(self, file, column, pen):
-        threshold_pen = pg.mkPen(color=(0, 94, 255), width=1.5)
-        segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)
+        """
+        Once the values required for segmentation are calculated, the plotting the same of both, this function just uses the above calculated values
+        and plots them appropriately
+        """
+        threshold_pen = pg.mkPen(color=(0, 94, 255), width=1.5)  # Setting color of threshold signal (horizontal line) in RGB values, can be changed to any other desired color
+        segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)  # Setting color of the actual segments we will be seeing (vertical lines) in RGB values
 
+        # Plotting the signal
         self.PW_signal_segment.plot(
             self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
             (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
             self.all_files1[file]['scaling_values'][column],
             pen=pen, name=file + f"_{column}")
 
+        # Plotting the difference
         self.PW_difference_segment.plot(
             self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
             self.z1,
             pen=pen)
+
+        # Plotting the threshold together with the error plot
         self.PW_difference_segment.plot(
             self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
             [self.threshold] * len(
                 self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x']),
             pen=threshold_pen)
 
+        # The code below is for plotting the segments
         for i in range(len(self.q)):
+            # Each segment will have 2 lines
+            # Plotting 1st line in the signal plot
             self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
                                          self.all_files1[file]['shift_values']['x']] * 3,
                                         np.linspace(min(self.all_files1[file]['data'][column] +
@@ -877,6 +913,15 @@ class MainWindow(QtWidgets.QMainWindow):
                                                         self.all_files1[file]['shift_values'][column]), 3),
                                         pen=segment_pen)
 
+            """
+            What is happening is, we can't plot using single x and y values, so 2 lists are created 1st one with values of the timestamp, and the other
+            with the min, max value of the provided signal.
+        
+            Rough example: self.PW_signal_segment.plot([2, 2, 2], [0, 5, 10], pen=color), so segment will be created at t=2, and the magnitude will range from 0-10
+                                                                      ↑_ we get this list using the np.linspace function and the 3 tells the function how many values between the first 2 arguments are needed.
+            """
+
+            # Plotting 2nd line in the signal plot
             self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
                                          self.all_files1[file]['shift_values']['x']] * 3,
                                         np.linspace(min(self.all_files1[file]['data'][column] +
@@ -885,6 +930,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                         self.all_files1[file]['shift_values'][column]), 3),
                                         pen=segment_pen)
 
+            # Plotting the segments in the error plot, similar to above
             self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
                                              self.all_files1[file]['shift_values']['x']] * 3,
                                             np.linspace(0, max(self.z1), 3), pen=segment_pen)
@@ -893,6 +939,10 @@ class MainWindow(QtWidgets.QMainWindow):
                                             np.linspace(0, max(self.z1), 3), pen=segment_pen)
 
     def manual_segmentation(self):
+        """
+        When performing the manual segmentation, we call for this function which in turn calls the helper function written above
+        with the appropriate arguments depending on the checkbox which is checked.
+        """
         if self.CB_segment_voltage.isChecked():
             self.calculate_manual_segmentation("RMS_voltage")
 
@@ -906,10 +956,16 @@ class MainWindow(QtWidgets.QMainWindow):
     #  Helper/General functions
     #################################################################################################
     def set_checkboxes_unchecked(self):
+        """
+        Sets the other checkboxes as unchecked, prohibits the user from selecting more than 1 check boxes when it is not allowed.
+        """
         for edit in self.tab_3.findChildren(QtWidgets.QCheckBox):
             edit.setChecked(False)
 
     def load_tooltips(self):
+        """
+        No changes/alterations need to made here, only change if you want to add some new tooltips, make sure to change the tooltip duration using the Qt Designer.
+        """
         self.TT_remove_selection.setToolTip('To de-select item from list, click on list on a blank area')
         self.label_2.setToolTip('The voltages will be grouped in groups of 3, so enter variables appropriately')
         self.TT_voltage_set.setToolTip(
