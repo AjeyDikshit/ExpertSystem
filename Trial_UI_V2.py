@@ -160,20 +160,28 @@ class MainWindow(QtWidgets.QMainWindow):
     #  Tab-1 -> User input area:
     #################################################################################################
     def get_file(self):
+        """
+        Method used to select the file whose derived quantities needs to be computed.
+        """
         dlg = QtWidgets.QFileDialog(self)
+        # Change the path appropriately, the path you give will be the location where the pop-up window will start from,
+        # default is C:/ (User will have to traverse multiple folders each time to select the file)
         self.file_path = dlg.getOpenFileName(self, 'Choose directory',
                                              r"C:\Users\dixit\OneDrive\Desktop\Ajey\Project\AFAS_dec2023\Mumbai Data\Oct12_2020_COMTRADE_Mumbai_Blackout\Unit 7 GRP",
                                              filter="Config files (*.cfg *.CFG)")[0]
         self.LE_file_path.setText(self.file_path)
 
         filename = self.LE_file_path.text().split('/')[-1][:-4]
+
+        # Creating a set for the voltages, currents to avoid duplicate entries in the list widget.
         self.voltage_set_items = set([])
         self.current_set_items = set([])
 
         try:
-            self.com.load(self.file_path)
-            self.LW_attribute_list.clear()
-            self.LW_attribute_list.addItems(self.com.analog_channel_ids)
+            self.com.load(self.file_path)  # Loading the comtrade object with the file.
+            self.LW_attribute_list.clear()  # Default behaviour
+            self.LW_attribute_list.addItems(self.com.analog_channel_ids)  # Adding all the analog signals available in the comtrade file
+            # Clearing the sets, incase the signal names match the previous loaded file.
             self.LW_voltage_set.clear()
             self.LW_current_set.clear()
 
@@ -188,53 +196,12 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Fail",
                                               "File browse failed, please check the filepath")
 
-    def load_file(self):
-        dlg = QtWidgets.QFileDialog(self)
-        self.file_path = dlg.getOpenFileName(self, 'Choose directory',
-                                             r"C:\Users\dixit\OneDrive\Desktop\Ajey\Project\AFAS_dec2023\Mumbai Data\Oct12_2020_COMTRADE_Mumbai_Blackout\Unit 7 GRP",
-                                             filter="Pickle (*.pickle)")[0]
-
-        self.LE_file_path.setText(self.file_path)
-        filename = self.LE_file_path.text().split('/')[-1][:-7]
-
-        self.LW_voltage_set.clear()
-        self.LW_current_set.clear()
-        self.LW_attribute_list.clear()
-
-        try:
-            with open(f"{self.file_path}", "rb") as infile:
-                self.all_files1[filename] = pickle.load(infile)
-
-            self.file_names = list(self.all_files1.keys())
-            self.ComB_list_of_files.clear()
-            self.ComB_list_of_files.addItems([""] + self.file_names)
-
-            self.ComB_instantaneous_tab.clear()
-            self.ComB_instantaneous_tab.addItems([""] + self.file_names)
-
-            self.groupBox.setEnabled(True)
-
-            self.number_of_files += 1
-            self.label_list_of_files.setText(
-                self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
-
-            self.all_files1[filename]['color_dict'] = self.color_list[self.color_index]
-            self.color_index += 1
-
-            QtWidgets.QMessageBox.information(self,
-                                              "Success",
-                                              "File loaded successfully, you can add more files/proceed to plotting")
-        except FileNotFoundError as err:
-            QtWidgets.QMessageBox.information(self,
-                                              "Fail",
-                                              "The file doesn't exist, please compute the values before trying to load a file")
-
     def move_to_voltage(self):
         item = self.LW_attribute_list.currentItem().text()
         if item not in self.voltage_set_items:
-            self.LW_voltage_set.addItem(item)
-            self.voltage_set_items.add(item)
-            self.LW_attribute_list.clearSelection()
+            self.LW_voltage_set.addItem(item)  # Adding signal to list widget
+            self.voltage_set_items.add(item)  # Adding signal to the set
+            self.LW_attribute_list.clearSelection()  # Removing the selection
         if self.LW_voltage_set.count() > 3:
             self.LE_power_selection.setEnabled(True)
 
@@ -267,11 +234,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.LE_power_selection.setEnabled(False)
 
     def compute_values(self):
-        # TODO: Implement threading, such that QMessageBox will pop up
-        self._compute_values()
-        # threading.Thread(target=self._compute_values, daemon=True).start()
+        """
+        The main engine for the computation of derived values
+        """
 
-    def _compute_values(self):
         df_dict = {}
         number_of_voltage_sets = self.LW_voltage_set.count() // 3
         number_of_current_sets = self.LW_current_set.count() // 3
@@ -279,8 +245,10 @@ class MainWindow(QtWidgets.QMainWindow):
         filename = self.LE_file_path.text().split('/')[-1][:-4]
         print(f"For {filename}, starting calculations")
 
-        df_dict['Time'] = self.com.time
+        df_dict['Time'] = self.com.time  # Adding time to the dictionary from the comtrade file.
 
+        # The following code will add all the instantaneous voltages to the dictionary ending with the set number (Ex: Va1, Vb1, Vc1, Va2, Vb2...) for as many sets there are
+        # And calculates the rms voltage for each set
         count = 0
         for i in range(self.LW_voltage_set.count()):
             if i % 3 == 0:
@@ -302,6 +270,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                      df_dict[f'Vb{i + 1}'], df_dict[f'Vc{i + 1}'])
         print(f"Instantaneous, RMS voltage: ✓")
 
+        # Current instantaneous and rms
         count = 0
         for i in range(self.LW_current_set.count()):
             if i % 3 == 0:
@@ -323,17 +292,23 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                      df_dict[f'Ib{i + 1}'], df_dict[f'Ic{i + 1}'])
         print(f"Instantaneous, RMS current: ✓")
 
+        # Creating a dataFrame using the dictionary we had been using so far (No use of the dictionary after this)
         df = pd.DataFrame(df_dict)
+
         # For derived quantities calculations:
+        # Evaluating the value in the power selection, to check if multiple power/derived quantities calculation needs to be performed.
+        # The power_input variable will be either a list with 2 values [1, 1] or a nested list signifying the sets of VI [[1, 1], [2, 2]]
         power_input = list(eval(self.LE_power_selection.text()))
-        if type(power_input[0]) == int:
+        if type(power_input[0]) == int:  # If this condition is True, we have to calculate power/derived quantities for a single set of VI
 
             if power_input[0] > number_of_voltage_sets or power_input[1] > number_of_current_sets:
                 QtWidgets.QMessageBox.information(self, "Error", "Please input proper values for power calculation")
             try:
+                # Storing the following values in variables as they are required multiple times for the calculation
                 va, vb, vc = df[f'Va{power_input[0]}'], df[f'Vb{power_input[0]}'], df[f'Vc{power_input[0]}']
                 ia, ib, ic = df[f'Ia{power_input[1]}'], df[f'Ib{power_input[1]}'], df[f'Ic{power_input[1]}']
 
+                # Calling appropriate function from PPF.py file to calculate the required quantities.
                 df["Real power"], df['Reactive power'] = ppf.instant_power(va, vb, vc, ia, ib, ic)
                 print(f"Power: ✓")
 
@@ -387,10 +362,11 @@ class MainWindow(QtWidgets.QMainWindow):
                                                   "Error",
                                                   "Didn't obtain correct number of values, please check your input lists")
                 return
-        elif type(power_input[0]) == list:
-            for _ in range(len(power_input)):
+        elif type(power_input[0]) == list:  # If this condition is True, that means we have to calculate multiple sets of derived quantities.
+            for _ in range(len(power_input)):  # Looping through the nested list
                 print(f"\n---------------------------\nCalculations for set {_ + 1}\n---------------------------")
                 try:
+                    # The rest of the code is same as above, except the naming for each derived quantity, signifying the set of VI used for calculations
                     va, vb, vc = df[f'Va{power_input[_][0]}'], df[f'Vb{power_input[_][0]}'], df[
                         f'Vc{power_input[_][0]}']
                     ia, ib, ic = df[f'Ia{power_input[_][1]}'], df[f'Ib{power_input[_][1]}'], df[
@@ -456,37 +432,98 @@ class MainWindow(QtWidgets.QMainWindow):
                                                       "Didn't obtain correct number of values, please check your input lists")
                     return
 
-        shifting_values = {item: 0 for item in df.columns[1:]}
+        # Once all the calculations are complete, we move to storing the calculated data along with some extra later-required quantities
+
+        shifting_values = {item: 0 for item in df.columns[1:]}  # Stores the horizontal/vertical shifted value of the file, by default the values are 0
         shifting_values['x'] = 0
 
-        scaling_values = {item: 1 for item in df.columns[1:]}
+        scaling_values = {item: 1 for item in df.columns[1:]}  # Store the scaling for each signal in the file, default value is 1
 
+        # Creating a final nested dictionary which stores all the required data corresponding to the file.
         self.all_files1[filename] = dict(data=df,
                                          shift_values=shifting_values,
                                          scaling_values=scaling_values,
                                          color_dict=self.color_list[self.color_index])
 
+        # TODO: make a graphic to show how the self.all_files dictionary will look with multiple files loaded.
         self.color_index += 1
+
+        # For tab-1
+        self.number_of_files += 1
+        self.label_list_of_files.setText(self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
+
+        # For tab-2:
         self.file_names = list(self.all_files1.keys())
         self.ComB_list_of_files.clear()
         self.ComB_list_of_files.addItems([""] + self.file_names)
         self.groupBox.setEnabled(True)
 
+        # For tab-3
         self.ComB_instantaneous_tab.clear()
         self.ComB_instantaneous_tab.addItems([""] + self.file_names)
 
         print(self.all_files1[filename]['data'].keys())
 
+        # Storing the final diction in pickle format(python binary file format), so that loading of the file is possible.
         with open(f"{self.LE_file_path.text()[:-4]}.pickle", "wb") as outfile:
             pickle.dump(self.all_files1[filename], outfile)
             print("Pickle file generated to load later after this session")
 
         self.showMessage()
-        self.number_of_files += 1
-        self.label_list_of_files.setText(self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
         return
 
+    def load_file(self):
+        """
+        Method used to load a pre-computed file directly, so that computation time and hassle is avoided.
+        """
+        dlg = QtWidgets.QFileDialog(self)
+        # Change the path appropriately, the path you give will be the location where the pop-up window will start from,
+        # default is C:/ (User will have to traverse multiple folders each time to select the file)
+        self.file_path = dlg.getOpenFileName(self, 'Choose directory',
+                                             r"C:\Users\dixit\OneDrive\Desktop\Ajey\Project\AFAS_dec2023\Mumbai Data\Oct12_2020_COMTRADE_Mumbai_Blackout\Unit 7 GRP",
+                                             filter="Pickle (*.pickle)")[0]
+
+        self.LE_file_path.setText(self.file_path)
+        filename = self.LE_file_path.text().split('/')[-1][:-7]  # Here we are using [:-7] as the loaded file will have ".pickle" extension
+
+        # Clearing the sets, incase the signal names match the previous loaded file.
+        self.LW_voltage_set.clear()
+        self.LW_current_set.clear()
+        self.LW_attribute_list.clear()
+
+        try:
+            with open(f"{self.file_path}", "rb") as infile:
+                self.all_files1[filename] = pickle.load(infile)  # Here the self.all_files1 dictionary will be populated for the corresponding file.
+
+            # Giving the signal particular color depending on color_list
+            self.all_files1[filename]['color_dict'] = self.color_list[self.color_index]
+            self.color_index += 1
+
+            # Tab-1, populating the list of files that have been loaded
+            self.number_of_files += 1
+            self.label_list_of_files.setText(
+                self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
+
+            self.file_names = list(self.all_files1.keys())  # List of files that have been loaded.
+
+            # Tab-2 default behaviour
+            self.groupBox.setEnabled(True)
+            self.ComB_list_of_files.clear()
+            self.ComB_list_of_files.addItems([""] + self.file_names)
+
+            # Tab-3 combo box
+            self.ComB_instantaneous_tab.clear()  # Clearing the previous entries to avoid duplication.
+            self.ComB_instantaneous_tab.addItems([""] + self.file_names)  # Populating with list of files that have been loaded
+
+            self.showMessage()
+        except FileNotFoundError as err:
+            QtWidgets.QMessageBox.information(self,
+                                              "Fail",
+                                              "The file doesn't exist, please compute the values before trying to load a file")
+
     def showMessage(self):
+        # Helper function, not really required don't remember why I added this LOL
+        # TO remove this function, just copy-paste the content where showMessage is called.
         QtWidgets.QMessageBox.information(self,
                                           "Success",
                                           "File loaded successfully, you can add more files/proceed to plotting")
@@ -630,15 +667,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.information(self,
                                                   "Error",
                                                   "Enter a valid shift value")
-
                 return
             shift = direction * float(self.LE_shift_value.text())
-
             new_val = round(float(self.x_shift_value.text()) + shift, 4)
             self.x_shift_value.setText(str(new_val))
 
             self.all_files1[self.ComB_list_of_files.currentText()]['shift_values']['x'] += shift
-
             self.plot_signal()
 
         except KeyError as err:
@@ -661,7 +695,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
             shift = direction * float(self.LE_shift_value.text())
             new_val = float(self.y_shift_value.text()) + shift
-
             self.y_shift_value.setText(str(new_val))
 
             self.all_files1[self.ComB_list_of_files.currentText()]['shift_values'][
