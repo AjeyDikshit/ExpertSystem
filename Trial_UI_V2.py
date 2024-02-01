@@ -14,7 +14,6 @@ from comtrade import Comtrade, ComtradeError
 import PPF as ppf
 import segmentation_functions as segment_function
 
-# TODO: The whole codebase can be refactored
 # TODO: Remove the 0s in DFT (The "cycles" part)
 # TODO: Option to remove files if required
 
@@ -32,6 +31,7 @@ There are some "rules" I have followed when naming the UI attributes, they are a
 - PW: Plot widgets (Ex: PW_voltage_rms => Plot widget corresponding to voltage rms plots)
 - labels have just been given appropriate names when required, and don't follow any rule
 """
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -78,7 +78,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #################################################################################################
         #  Tab-2 -> Signal plotting tab:
         #################################################################################################
-        self.tab2_plots = self.scrollArea.findChildren(pg.PlotWidget)  # Stores all the plots in the scroll area of tab-2 in sequential order
+        # Stores all the plots in the scroll area of tab-2 in sequential order
+        self.tab2_plots = self.scrollArea.findChildren(pg.PlotWidget)
         for plot in self.tab2_plots:
             plot.showGrid(x=True, y=True, alpha=1)
 
@@ -107,7 +108,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.CB_current_negative.stateChanged.connect(self.plot_signal)
         self.CB_current_zero.stateChanged.connect(self.plot_signal)
 
-        self.PB_move_left.clicked.connect(lambda: self.move_horizontal(-1))  # lambda functions are required here as I want to pass some arguments to the function, this is true for all the places' lambda function is called
+        # lambda functions are required here as I want to pass some arguments to the function, this is true for all the places' lambda function is called
+        self.PB_move_left.clicked.connect(lambda: self.move_horizontal(-1))
         self.PB_move_right.clicked.connect(lambda: self.move_horizontal(1))
 
         self.PB_move_up.clicked.connect(lambda: self.move_vertical(1))
@@ -180,7 +182,8 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             self.com.load(self.file_path)  # Loading the comtrade object with the file.
             self.LW_attribute_list.clear()  # Default behaviour
-            self.LW_attribute_list.addItems(self.com.analog_channel_ids)  # Adding all the analog signals available in the comtrade file
+            # Adding all the analog signals available in the comtrade file
+            self.LW_attribute_list.addItems(self.com.analog_channel_ids)
             # Clearing the sets, incase the signal names match the previous loaded file.
             self.LW_voltage_set.clear()
             self.LW_current_set.clear()
@@ -434,10 +437,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Once all the calculations are complete, we move to storing the calculated data along with some extra later-required quantities
 
-        shifting_values = {item: 0 for item in df.columns[1:]}  # Stores the horizontal/vertical shifted value of the file, by default the values are 0
+        # Stores the horizontal/vertical shifted value of the file, by default the values are 0
+        shifting_values = {item: 0 for item in df.columns[1:]}
         shifting_values['x'] = 0
 
-        scaling_values = {item: 1 for item in df.columns[1:]}  # Store the scaling for each signal in the file, default value is 1
+        # Store the scaling for each signal in the file, default value is 1
+        scaling_values = {item: 1 for item in df.columns[1:]}
 
         # Creating a final nested dictionary which stores all the required data corresponding to the file.
         self.all_files1[filename] = dict(data=df,
@@ -484,7 +489,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                              filter="Pickle (*.pickle)")[0]
 
         self.LE_file_path.setText(self.file_path)
-        filename = self.LE_file_path.text().split('/')[-1][:-7]  # Here we are using [:-7] as the loaded file will have ".pickle" extension
+        # Here we are using [:-7] as the loaded file will have ".pickle" extension
+        filename = self.LE_file_path.text().split('/')[-1][:-7]
 
         # Clearing the sets, incase the signal names match the previous loaded file.
         self.LW_voltage_set.clear()
@@ -492,8 +498,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LW_attribute_list.clear()
 
         try:
+            # Here the self.all_files1 dictionary will be populated for the corresponding file.
             with open(f"{self.file_path}", "rb") as infile:
-                self.all_files1[filename] = pickle.load(infile)  # Here the self.all_files1 dictionary will be populated for the corresponding file.
+                self.all_files1[filename] = pickle.load(infile)
 
             # Giving the signal particular color depending on color_list
             self.all_files1[filename]['color_dict'] = self.color_list[self.color_index]
@@ -513,7 +520,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # Tab-3 combo box
             self.ComB_instantaneous_tab.clear()  # Clearing the previous entries to avoid duplication.
-            self.ComB_instantaneous_tab.addItems([""] + self.file_names)  # Populating with list of files that have been loaded
+            # Populating with list of files that have been loaded
+            self.ComB_instantaneous_tab.addItems([""] + self.file_names)
 
             self.showMessage()
         except FileNotFoundError as err:
@@ -648,7 +656,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith(signal)]:
-                if plotIndex in [7, 8]:  # This conditional is required because Sequence transform required plotting the absolute value of the signal.
+                # This conditional is required because Sequence transform required plotting the absolute value of the signal.
+                if plotIndex in [7,8]:
                     self.tab2_plots[plotIndex].plot(
                         self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
                         np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
@@ -788,8 +797,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if file not in self.plotted_plot:
             self.plotted_plot.append(file)  # Adding the file to list
+            # Creating a dictionary, which will store the plots and layouts corresponding to each file.
             if file not in self.plot_dict.keys():
-                self.plot_dict[file] = {"plots": [], "h_layout": []}  # Creating a dictionary, which will store the plots and layouts corresponding to each file.
+                self.plot_dict[file] = {"plots": [],
+                                        "h_layout": []}
 
             # Calculating how many sets are present for the file
             num_of_sets = max(len([item for item in self.all_files1[file]['data'].keys() if item.startswith("V")]),
@@ -841,7 +852,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.plot_dict[file]['plots'] += [plot]  # Adding the plot object to the dictionary
                 self.plot_dict[file]["h_layout"] += [layout]  # Adding the horizontal layout object to the dictionary
 
-                self.layout2.addLayout(layout)  # Adding the complete horizontal layout which contains the voltage, current plot to the vertical layout.
+                # Adding the complete horizontal layout which contains the voltage, current plot to the vertical layout.
+                self.layout2.addLayout(layout)
 
             # Adding the vertical layout to the scroll area
             scrollContent = QtWidgets.QWidget()
@@ -864,7 +876,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.layout2.removeItem(h_layout)
             for plot in self.plot_dict[file]['plots']:
                 plot.deleteLater()
-            self.plotted_plot.remove(file)  # Removing the file from the list (so that it can be added again if required)
+            # Removing the file from the list (so that it can be added again if required)
+            self.plotted_plot.remove(file)
             del self.plot_dict[file]  # Deleting the dictionary due to the above reason.
         else:
             QtWidgets.QMessageBox.information(self,
@@ -930,8 +943,10 @@ class MainWindow(QtWidgets.QMainWindow):
         Once the values required for segmentation are calculated, the plotting the same of both, this function just uses the above calculated values
         and plots them appropriately
         """
-        threshold_pen = pg.mkPen(color=(0, 94, 255), width=1.5)  # Setting color of threshold signal (horizontal line) in RGB values, can be changed to any other desired color
-        segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)  # Setting color of the actual segments we will be seeing (vertical lines) in RGB values
+        threshold_pen = pg.mkPen(color=(0, 94, 255),
+                                 width=1.5)  # Setting color of threshold signal (horizontal line) in RGB values, can be changed to any other desired color
+        segment_pen = pg.mkPen(color=(255, 255, 0),
+                               width=1.5)  # Setting color of the actual segments we will be seeing (vertical lines) in RGB values
 
         # Plotting the signal
         self.PW_signal_segment.plot(
@@ -1043,7 +1058,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                              "⌞ V0 ⌟          ⌞ Vc ⌟\n")
 
 
-class DeselectableTreeView(QtWidgets.QListWidget):  # Class to deselect the selection in the list widgets in Tab-1 (To avoid unnecessary removal of items)
+class DeselectableTreeView(QtWidgets.QListWidget):  # Class to de-select the selection in the list widgets in Tab-1 (To avoid unnecessary removal of items)
     def __init__(self, parent):
         super().__init__(parent)
 
