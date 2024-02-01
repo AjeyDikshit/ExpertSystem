@@ -775,7 +775,9 @@ class MainWindow(QtWidgets.QMainWindow):
     #################################################################################################
     def plot_instantaneous(self):
         # TODO: rename self.layout2 to something appropriate
-
+        """
+        Method to plot the 3 phase instantaneous signals, for each file, each set.
+        """
         file = self.ComB_instantaneous_tab.currentText()
 
         if file == "":
@@ -785,23 +787,28 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         if file not in self.plotted_plot:
-            self.plotted_plot.append(file)
+            self.plotted_plot.append(file)  # Adding the file to list
             if file not in self.plot_dict.keys():
-                self.plot_dict[file] = {"plots": [], "h_layout": []}
+                self.plot_dict[file] = {"plots": [], "h_layout": []}  # Creating a dictionary, which will store the plots and layouts corresponding to each file.
 
-            num_of_sets = len([item for item in self.all_files1[file]['data'].keys() if item.startswith("V")]) // 3
+            # Calculating how many sets are present for the file
+            num_of_sets = max(len([item for item in self.all_files1[file]['data'].keys() if item.startswith("V")]),
+                              len([item for item in self.all_files1[file]['data'].keys() if item.startswith("I")])) // 3
 
             for val in range(num_of_sets):
-                layout = QtWidgets.QHBoxLayout()
+                layout = QtWidgets.QHBoxLayout()  # Creating a new horizontal layout which will store Voltage and Current plot of a set
 
+                # Creating plot for voltage signals
                 plot = pg.PlotWidget()
+                # Default settings
                 plot.addLegend(offset=(280, 8))
                 plot.setMinimumSize(480, 250)
                 plot.setMaximumSize(550, 280)
 
-                colors = ['r', 'y', 'b'] * 3
-                color_count = 0
+                # If in any case the number of sets are more than 3 (more than 3 voltage/current sets) then the 3 here needs to changed accordingly
+                colors = ['r', 'y', 'b'] * 3  # => ['r', 'y', 'b', 'r', 'y', 'b', 'r', 'y', 'b']
 
+                color_count = 0
                 for column in [item for item in self.all_files1[file]['data'].keys() if
                                item.startswith("V") and item.endswith(str(val + 1))]:
                     pen = pg.mkPen(color=colors[color_count], width=1.5)
@@ -811,15 +818,14 @@ class MainWindow(QtWidgets.QMainWindow):
                         pen=pen, name=file + f"_{column}")
                     color_count += 1
 
-                layout.addWidget(plot)
-                self.plot_dict[file]['plots'] += [plot]
+                layout.addWidget(plot)  # Adding the voltage plot to horizontal layout
+                self.plot_dict[file]['plots'] += [plot]  # Adding the plot object to dictionary
 
+                # Similarly for current instantaneous
                 plot = pg.PlotWidget()
                 plot.addLegend(offset=(280, 8))
                 plot.setMinimumSize(480, 250)
                 plot.setMaximumSize(550, 280)
-
-                colors = ['r', 'y', 'b'] * 3
                 color_count = 0
 
                 for column in [item for item in self.all_files1[file]['data'].keys() if
@@ -831,12 +837,13 @@ class MainWindow(QtWidgets.QMainWindow):
                         pen=pen, name=file + f"_{column}")
                     color_count += 1
 
-                self.plot_dict[file]['plots'] += [plot]
-                self.plot_dict[file]["h_layout"] += [layout]
-                layout.addWidget(plot)
+                layout.addWidget(plot)  # Adding the current plot to the horizontal layout
+                self.plot_dict[file]['plots'] += [plot]  # Adding the plot object to the dictionary
+                self.plot_dict[file]["h_layout"] += [layout]  # Adding the horizontal layout object to the dictionary
 
-                self.layout2.addLayout(layout)
+                self.layout2.addLayout(layout)  # Adding the complete horizontal layout which contains the voltage, current plot to the vertical layout.
 
+            # Adding the vertical layout to the scroll area
             scrollContent = QtWidgets.QWidget()
             scrollContent.setLayout(self.layout2)
             self.scroll1.setWidget(scrollContent)
@@ -848,14 +855,17 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Plots already plotted!")
 
     def remove_plot_instantaneous(self):
+        """
+        Removing the plots, horizontal layout corresponding to selected file
+        """
         file = self.ComB_instantaneous_tab.currentText()
         if file in self.plotted_plot:
             for h_layout in self.plot_dict[file]["h_layout"]:
                 self.layout2.removeItem(h_layout)
             for plot in self.plot_dict[file]['plots']:
                 plot.deleteLater()
-            self.plotted_plot.remove(file)
-            del self.plot_dict[file]
+            self.plotted_plot.remove(file)  # Removing the file from the list (so that it can be added again if required)
+            del self.plot_dict[file]  # Deleting the dictionary due to the above reason.
         else:
             QtWidgets.QMessageBox.information(self,
                                               "Error",
@@ -1033,7 +1043,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                              "⌞ V0 ⌟          ⌞ Vc ⌟\n")
 
 
-class DeselectableTreeView(QtWidgets.QListWidget):
+class DeselectableTreeView(QtWidgets.QListWidget):  # Class to deselect the selection in the list widgets in Tab-1 (To avoid unnecessary removal of items)
     def __init__(self, parent):
         super().__init__(parent)
 
