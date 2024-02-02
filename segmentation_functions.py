@@ -35,14 +35,7 @@ def segmentation_trendfilter(time_signal, data_signal, lambda1=1):
     # Calculating the error and setting threshold
     z1 = abs(data_signal - y)
 
-    def get_std_dev(ls):
-        n = len(ls)
-        mean = sum(ls) / n
-        var = sum((x - mean) ** 2 for x in ls) / n
-        std_dev = var ** 0.5
-        return std_dev
-
-    threshold = 5 * np.mean(abs(z1) + get_std_dev(abs(z1)))  # Setting the threshold
+    threshold = 5 * np.mean(abs(z1) + np.std(abs(z1)))  # Setting the threshold
     z = [n for n in range(len(z1)) if z1[n] > threshold]
 
     # Storing the different pairs of samples which are above threshold
@@ -88,14 +81,6 @@ def manual_segmentation_trendfilter(time_signal, data_signal, threshold):
     # Calculating the error and setting threshold
     z1 = abs(data_signal - y)
 
-    def get_std_dev(ls):
-        n = len(ls)
-        mean = sum(ls) / n
-        var = sum((x - mean) ** 2 for x in ls) / n
-        std_dev = var ** 0.5
-        return std_dev
-
-    #    threshold = 5*np.mean(abs(data_signal - y)) + get_std_dev(abs(data_signal - y)) # Setting the threshold
     z = [n for n in range(len(z1)) if z1[n] > threshold]
 
     # Storing the different pairs of samples which are above threshold
