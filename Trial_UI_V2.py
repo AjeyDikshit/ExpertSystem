@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import os
+import time
 from pathlib import Path
 import sys
 
@@ -147,7 +148,11 @@ class MainWindow(QtWidgets.QMainWindow):
         #################################################################################################
         # Initializing the variables
         self.q, self.z1, self.threshold = None, None, None
-
+        self.super_q = None
+        self.max_val = [0, 0]
+        self.segments = None
+        self.signal_dataItems = {}
+        self.difference_dataItems = {}
         # Adding grid to the plots
         self.PW_signal_segment.showGrid(x=True, y=True, alpha=1)
         self.PW_difference_segment.showGrid(x=True, y=True, alpha=1)
@@ -161,6 +166,8 @@ class MainWindow(QtWidgets.QMainWindow):
             lambda: self.calculate_segmentation("Frequency F_avg", self.CB_segment_frequency))
 
         self.PB_manual_segmentation.clicked.connect(self.manual_segmentation)
+
+        self.PB_shift_segment.clicked.connect(self.shift_segment)
 
     #################################################################################################
     #  Tab-1 -> User input area:
@@ -302,7 +309,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Evaluating the value in the power selection, to check if multiple power/derived quantities calculation needs to be performed.
         # The power_input variable will be either a list with 2 values [1, 1] or a nested list signifying the sets of VI [[1, 1], [2, 2]]
         power_input = list(eval(self.LE_power_selection.text()))
-        if type(power_input[0]) == int:  # If this condition is True, we have to calculate power/derived quantities for a single set of VI
+        if type(power_input[
+                    0]) == int:  # If this condition is True, we have to calculate power/derived quantities for a single set of VI
 
             if power_input[0] > number_of_voltage_sets or power_input[1] > number_of_current_sets:
                 QtWidgets.QMessageBox.information(self, "Error", "Please input proper values for power calculation")
@@ -365,7 +373,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                                   "Error",
                                                   "Didn't obtain correct number of values, please check your input lists")
                 return
-        elif type(power_input[0]) == list:  # If this condition is True, that means we have to calculate multiple sets of derived quantities.
+        elif type(power_input[
+                      0]) == list:  # If this condition is True, that means we have to calculate multiple sets of derived quantities.
             for _ in range(len(power_input)):  # Looping through the nested list
                 print(f"\n---------------------------\nCalculations for set {_ + 1}\n---------------------------")
                 try:
@@ -657,7 +666,7 @@ class MainWindow(QtWidgets.QMainWindow):
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith(signal)]:
                 # This conditional is required because Sequence transform required plotting the absolute value of the signal.
-                if plotIndex in [7,8]:
+                if plotIndex in [7, 8]:
                     self.tab2_plots[plotIndex].plot(
                         self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
                         np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
@@ -676,7 +685,7 @@ class MainWindow(QtWidgets.QMainWindow):
         :param direction: -1 to move left, +1 to move right
         """
         try:
-            if self.LE_shift_values.text() == "":
+            if self.LE_shift_value.text() == "":
                 QtWidgets.QMessageBox.information(self,
                                                   "Error",
                                                   "Enter a valid shift value")
@@ -699,7 +708,7 @@ class MainWindow(QtWidgets.QMainWindow):
         :param direction: +1 to move signal up, -1 to move signal down
         """
         try:
-            if self.LE_shift_values.text() == "":
+            if self.LE_shift_value.text() == "":
                 QtWidgets.QMessageBox.information(self,
                                                   "Error",
                                                   "Enter a valid shift value")
@@ -905,6 +914,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.PW_difference_segment.clear()
         self.LE_threshold_value.setText("")
 
+        threshold_pen = pg.mkPen(color=(0, 94, 255),
+                                 width=1.5)  # Setting color of threshold signal (horizontal line) in RGB values, can be changed to any other desired color
+
+        self.super_q = {}
+
         for file in self.file_names:
             pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
             for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith(signal)]:
@@ -912,8 +926,31 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
                     self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column])
 
-                self.plot_segmentation(file, column, pen)
+                self.super_q[file] = [val for val in self.q]
 
+                signal_ = self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]
+                self.max_val[0] = max(signal_) if self.max_val[0] < max(signal_) else self.max_val[0]
+                self.max_val[1] = max(self.z1) if self.max_val[1] < max(self.z1) else self.max_val[1]
+
+                self.signal_dataItems[file + f"_{column}"] = pg.PlotDataItem(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
+                    self.all_files1[file]['scaling_values'][column], pen=pen, name=file + f"_{column}")
+
+                self.difference_dataItems[file + f"_{column}"] = pg.PlotDataItem(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.z1, pen=pen)
+
+                self.PW_difference_segment.plot(
+                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    [self.threshold] * len(
+                        self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x']),
+                    pen=threshold_pen)
+
+        self.merge_segments()
+        self.plot_segmentation()
+
+        # print(self.super_q)
         if not any([button.isChecked() for button in self.tab_3.findChildren(QtWidgets.QCheckBox)]):
             self.PW_signal_segment.clear()
             self.PW_difference_segment.clear()
@@ -935,75 +972,78 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
                     self.threshold
                 )
+                signal_ = self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]
+                self.super_q[file] = self.q
+                self.max_val[0] = max(signal_) if self.max_val[0] < max(signal_) else self.max_val[0]
+                self.max_val[1] = max(self.z1) if self.max_val[1] < max(self.z1) else self.max_val[1]
 
                 self.plot_segmentation(file, column, pen)
 
-    def plot_segmentation(self, file, column, pen):
+    def plot_segmentation(self):
         """
         Once the values required for segmentation are calculated, the plotting the same of both, this function just uses the above calculated values
         and plots them appropriately
         """
-        threshold_pen = pg.mkPen(color=(0, 94, 255),
-                                 width=1.5)  # Setting color of threshold signal (horizontal line) in RGB values, can be changed to any other desired color
         segment_pen = pg.mkPen(color=(255, 255, 0),
                                width=1.5)  # Setting color of the actual segments we will be seeing (vertical lines) in RGB values
 
-        # Plotting the signal
-        self.PW_signal_segment.plot(
-            self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-            (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
-            self.all_files1[file]['scaling_values'][column],
-            pen=pen, name=file + f"_{column}")
+        self.PW_signal_segment.addLegend(offset=(350, 8))
 
         # Plotting the difference
-        self.PW_difference_segment.plot(
-            self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-            self.z1,
-            pen=pen)
+        self.PW_difference_segment.addLegend(offset=(350, 8))
 
+        for i in range(len(self.segments)):
+            self.signal_dataItems[f"left segment {i + 1}"] = pg.PlotDataItem([self.segments[i][0]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+            self.signal_dataItems[f"right segment {i + 1}"] = pg.PlotDataItem([self.segments[i][-1]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+
+            self.difference_dataItems[f"left segment {i + 1}"] = pg.PlotDataItem([self.segments[i][0]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+            self.difference_dataItems[f"right segment {i + 1}"] = pg.PlotDataItem([self.segments[i][-1]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+
+        print(self.signal_dataItems, self.difference_dataItems)
+
+        for key in self.signal_dataItems.keys():
+            print(key)
+            self.PW_signal_segment.addItem(self.signal_dataItems[key])
+            self.PW_difference_segment.addItem(self.difference_dataItems[key])
+        print("--------------------------------------------")
         # Plotting the threshold together with the error plot
-        self.PW_difference_segment.plot(
-            self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-            [self.threshold] * len(
-                self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x']),
-            pen=threshold_pen)
 
         # The code below is for plotting the segments
-        for i in range(len(self.q)):
-            # Each segment will have 2 lines
-            # Plotting 1st line in the signal plot
-            self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
-                                         self.all_files1[file]['shift_values']['x']] * 3,
-                                        np.linspace(min(self.all_files1[file]['data'][column] +
-                                                        self.all_files1[file]['shift_values'][column]),
-                                                    max(self.all_files1[file]['data'][column] +
-                                                        self.all_files1[file]['shift_values'][column]), 3),
-                                        pen=segment_pen)
-
-            """
-            What is happening is, we can't plot using single x and y values, so 2 lists are created 1st one with values of the timestamp, and the other
-            with the min, max value of the provided signal.
-        
-            Rough example: self.PW_signal_segment.plot([2, 2, 2], [0, 5, 10], pen=color), so segment will be created at t=2, and the magnitude will range from 0-10
-                                                                      ↑_ we get this list using the np.linspace function and the 3 tells the function how many values between the first 2 arguments are needed.
-            """
-
-            # Plotting 2nd line in the signal plot
-            self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
-                                         self.all_files1[file]['shift_values']['x']] * 3,
-                                        np.linspace(min(self.all_files1[file]['data'][column] +
-                                                        self.all_files1[file]['shift_values'][column]),
-                                                    max(self.all_files1[file]['data'][column] +
-                                                        self.all_files1[file]['shift_values'][column]), 3),
-                                        pen=segment_pen)
-
-            # Plotting the segments in the error plot, similar to above
-            self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
-                                             self.all_files1[file]['shift_values']['x']] * 3,
-                                            np.linspace(0, max(self.z1), 3), pen=segment_pen)
-            self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
-                                             self.all_files1[file]['shift_values']['x']] * 3,
-                                            np.linspace(0, max(self.z1), 3), pen=segment_pen)
+        # for i in range(len(self.q)):
+        #     # Each segment will have 2 lines
+        #     # Plotting 1st line in the signal plot
+        #     self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
+        #                                  self.all_files1[file]['shift_values']['x']] * 3,
+        #                                 np.linspace(min(self.all_files1[file]['data'][column] +
+        #                                                 self.all_files1[file]['shift_values'][column]),
+        #                                             max(self.all_files1[file]['data'][column] +
+        #                                                 self.all_files1[file]['shift_values'][column]), 3),
+        #                                 pen=segment_pen)
+        #
+        #     """
+        #     What is happening is, we can't plot using single x and y values, so 2 lists are created 1st one with values of the timestamp, and the other
+        #     with the min, max value of the provided signal.
+        #
+        #     Rough example: self.PW_signal_segment.plot([2, 2, 2], [0, 5, 10], pen=color), so segment will be created at t=2, and the magnitude will range from 0-10
+        #                                                               ↑_ we get this list using the np.linspace function and the 3 tells the function how many values between the first 2 arguments are needed.
+        #     """
+        #
+        #     # Plotting 2nd line in the signal plot
+        #     self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
+        #                                  self.all_files1[file]['shift_values']['x']] * 3,
+        #                                 np.linspace(min(self.all_files1[file]['data'][column] +
+        #                                                 self.all_files1[file]['shift_values'][column]),
+        #                                             max(self.all_files1[file]['data'][column] +
+        #                                                 self.all_files1[file]['shift_values'][column]), 3),
+        #                                 pen=segment_pen)
+        #
+        #     # Plotting the segments in the error plot, similar to above
+        #     self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
+        #                                      self.all_files1[file]['shift_values']['x']] * 3,
+        #                                     np.linspace(0, max(self.z1), 3), pen=segment_pen)
+        #     self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
+        #                                      self.all_files1[file]['shift_values']['x']] * 3,
+        #                                     np.linspace(0, max(self.z1), 3), pen=segment_pen)
 
     def manual_segmentation(self):
         """
@@ -1018,6 +1058,114 @@ class MainWindow(QtWidgets.QMainWindow):
 
         elif self.CB_segment_frequency.isChecked():
             self.calculate_manual_segmentation("Frequency F_avg")
+
+    def merge_segments(self):
+        # TODO: MAke better logic to merge the segments
+        self.segments = None
+        left = []
+        right = []
+
+        for file in self.super_q.keys():
+            for segment_indices in (self.super_q[file]):
+                left.append(
+                    self.all_files1[file]['data']['Time'][segment_indices[0]] + self.all_files1[file]['shift_values'][
+                        'x'])
+                right.append(
+                    self.all_files1[file]['data']['Time'][segment_indices[-1]] + self.all_files1[file]['shift_values'][
+                        'x'])
+
+        left = sorted(left)
+        right = sorted(right)
+        seg_left = []
+        seg_right = []
+
+        for i in range(1, len(left)):
+            if left[i] - left[i - 1] > 0.02:
+                seg_left.append(left[i - 1])
+
+        for i in range(1, len(right)):
+            if right[i] - right[i - 1] > 0.02:
+                seg_right.append(right[i])
+
+        self.segments = list(map(list, zip(seg_left, seg_right)))
+        self.ComB_segment_selection.clear()
+        self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
+
+        # Separate function for plotting using segments as argument
+
+    def plot_using_segments(self):
+        ...
+
+    def plot_shifted_segments(self, what_to_shift, segment_num=0):
+        segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)
+
+        # TODO: Create a list storing all the plot data items, signal as well as the segments, so to add/remove the data points easily and effortlessly
+        if what_to_shift == "Both":
+            key = [f"left segment {segment_num + 1}", f"right segment {segment_num + 1}"]
+        elif what_to_shift == "Left":
+            key = [f"left segment {segment_num + 1}"]
+        elif what_to_shift == "Right":
+            key = [f"right segment {segment_num + 1}"]
+
+        for val in key:
+            print("Removing the items", val)
+            print(self.signal_dataItems[val])
+            self.PW_signal_segment.removeItem(self.signal_dataItems[val])
+            del self.signal_dataItems[val]
+
+            self.PW_difference_segment.removeItem(self.difference_dataItems[val])
+            del self.difference_dataItems[val]
+
+        # for i in range(len(self.segments)):
+        print("Adding the new segments")
+        if what_to_shift == "Both":
+            print("Both")
+            self.signal_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem([self.segments[segment_num][0]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+            self.signal_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem([self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+
+            self.difference_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem([self.segments[segment_num][0]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+            self.difference_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem([self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+        elif what_to_shift == "Left":
+            print("L")
+            self.signal_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem(
+                [self.segments[segment_num][0]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+            self.difference_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem(
+                [self.segments[segment_num][0]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+        elif what_to_shift == "Right":
+            print("R")
+            self.signal_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem(
+                [self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+            self.difference_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem(
+                [self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+
+        for val in key:
+            print("Plotting the new segments")
+            print(val)
+            self.PW_signal_segment.addItem(self.signal_dataItems[val])
+            self.PW_difference_segment.addItem(self.difference_dataItems[val])
+
+    def shift_segment(self):
+        # TODO: Plot together with error plot, and signal plot might have to make new potting function
+        segment_to_shift = int(self.ComB_segment_selection.currentText())
+        what_to_shift = self.ComB_what2move.currentText()
+        shift_value = float(self.LE_segment_shift_value.text())
+
+        if what_to_shift == "Both":
+            self.segments[segment_to_shift][0] += shift_value
+            self.segments[segment_to_shift][-1] += shift_value
+        elif what_to_shift == "Left":
+            if self.segments[segment_to_shift][0] + shift_value < self.segments[segment_to_shift][-1]:
+                self.segments[segment_to_shift][0] += shift_value
+            else:
+                print("Left segment can't move anymore")
+        elif what_to_shift == 'Right':
+            if self.segments[segment_to_shift][-1] + shift_value > self.segments[segment_to_shift][0]:
+                self.segments[segment_to_shift][-1] += shift_value
+            else:
+                print("Right segment can't move anymore")
+
+        # self.plot_using_segments(segment_to_shift)
+        self.plot_shifted_segments(what_to_shift, segment_to_shift)
 
     #################################################################################################
     #  Helper/General functions
@@ -1058,7 +1206,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                              "⌞ V0 ⌟          ⌞ Vc ⌟\n")
 
 
-class DeselectableTreeView(QtWidgets.QListWidget):  # Class to de-select the selection in the list widgets in Tab-1 (To avoid unnecessary removal of items)
+class DeselectableTreeView(
+    QtWidgets.QListWidget):  # Class to de-select the selection in the list widgets in Tab-1 (To avoid unnecessary removal of items)
     def __init__(self, parent):
         super().__init__(parent)
 

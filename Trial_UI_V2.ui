@@ -30,7 +30,7 @@
      <string notr="true"/>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -1776,6 +1776,108 @@
         </widget>
        </item>
       </layout>
+     </widget>
+     <widget class="QLabel" name="label_21">
+      <property name="geometry">
+       <rect>
+        <x>790</x>
+        <y>370</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Segment:</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="ComB_segment_selection">
+      <property name="geometry">
+       <rect>
+        <x>852</x>
+        <y>367</y>
+        <width>75</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_22">
+      <property name="geometry">
+       <rect>
+        <x>950</x>
+        <y>370</y>
+        <width>91</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>What to move?</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="ComB_what2move">
+      <property name="geometry">
+       <rect>
+        <x>1044</x>
+        <y>366</y>
+        <width>75</width>
+        <height>24</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string/>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Both</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Left</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Right</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QLabel" name="label_23">
+      <property name="geometry">
+       <rect>
+        <x>790</x>
+        <y>420</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Shift_value:</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="LE_segment_shift_value">
+      <property name="geometry">
+       <rect>
+        <x>863</x>
+        <y>417</y>
+        <width>81</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_shift_segment">
+      <property name="geometry">
+       <rect>
+        <x>958</x>
+        <y>417</y>
+        <width>111</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Shift segment</string>
+      </property>
      </widget>
     </widget>
    </widget>
