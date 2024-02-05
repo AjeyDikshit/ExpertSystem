@@ -46,6 +46,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.com = Comtrade()  # Initializing at start so that it can be reused for all files.
         self.files_data_dict = {}
+
+        """
+        This is how the self.files_data_dict looks like internally =>
+        For each file we have a dictionary that stores the data, shift/scale values, plot color.
+        self.files_data_dict = {
+            "filename": {
+                "data": A pandas Dataframe, which stores all the signal values (from the comtrade file and the derived quantities),
+                "shift_values": A Python dictionary, which stores value of the x-y shift, by default they are 0 (No shift),
+                "scaling_values": Similar to shift values, but for the scaling of the signals, by default the value is 1,
+                "plot_color": Stores the color, which the file will use for all the plots
+            },
+            
+            "filename": {
+                "data": A pandas Dataframe, which stores all the signal values (from the comtrade file and the derived quantities),
+                "shift_values": A Python dictionary, which stores value of the x-y shift, by default they are 0 (No shift),
+                "scaling_values": Similar to shift values, but for the scaling of the signals, by default the value is 1,
+                "plot_color": Stores the color, which the file will use for all the plots
+            }
+        }
+        """
+
         self.groupBox.setEnabled(False)
 
         #################################################################################################
@@ -69,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Calling methods depending on what is clicked
         self.PB_browse_file_location.clicked.connect(self.get_file)
         self.PB_load_file.clicked.connect(self.load_file)
+        self.PB_load_save_state.clicked.connect(self.load_save_state)
         self.PB_move_to_voltage.clicked.connect(self.move_to_voltage)
         self.PB_move_to_current.clicked.connect(self.move_to_current)
         self.PB_remove_entry.clicked.connect(self.removeSel)
@@ -539,6 +561,43 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Fail",
                                               "The file doesn't exist, please compute the values before trying to load a file")
 
+    def load_save_state(self):
+        dlg = QtWidgets.QFileDialog(self)
+        self.file_path = dlg.getExistingDirectory(self, 'Choose directory', r'C:\Users\dixit\OneDrive\Desktop')
+        files = os.listdir(self.file_path)
+
+        self.LW_voltage_set.clear()
+        self.LW_current_set.clear()
+        self.LW_attribute_list.clear()
+
+        for file in files:
+            # Here the self.files_data_dict dictionary will be populated for the corresponding file.
+            with open(f"{self.file_path}\\{file}", "rb") as infile:
+                self.files_data_dict[file] = pickle.load(infile)
+
+            # Giving the signal particular color depending on color_list
+            self.files_data_dict[file]['plot_color'] = self.color_list[self.color_index]
+            self.color_index += 1
+
+            # Tab-1, populating the list of files that have been loaded
+            self.number_of_files += 1
+            self.label_list_of_files.setText(
+                self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {file}")
+
+        self.file_names = list(self.files_data_dict.keys())  # List of files that have been loaded.
+
+        # Tab-2 default behaviour
+        self.groupBox.setEnabled(True)
+        self.ComB_list_of_files.clear()
+        self.ComB_list_of_files.addItems([""] + self.file_names)
+
+        # Tab-3 combo box
+        self.ComB_instantaneous_tab.clear()  # Clearing the previous entries to avoid duplication.
+        # Populating with list of files that have been loaded
+        self.ComB_instantaneous_tab.addItems([""] + self.file_names)
+
+        self.showMessage()
+
     def showMessage(self):
         # Helper function, not really required don't remember why I added this LOL
         # TO remove this function, just copy-paste the content where showMessage is called.
@@ -779,17 +838,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def save_state(self):
         # Method to save the current visual state of the plots, to avoid aligning the signals everytime.
-        # TODO: Improve save state: Store all files in a folder (name=datetime), and add "load save state" button which allows to
-        #  browse the folder and load all the files directly.
+        directory_name = time.strftime('%d-%m-%Y %H-%M-%S', time.localtime())  # You can change the format of the directory name here!
+        if not os.path.exists(rf'C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\pickle files\{directory_name}'):
+            os.makedirs(rf'C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\pickle files\{directory_name}')
+
         for filename in self.file_names:
-            with open(fr"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\pickle files\{filename}.pickle",
+            with open(fr"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\pickle files\{directory_name}\{filename}.pickle",
                       "wb") as outfile:
                 pickle.dump(self.files_data_dict[filename], outfile)
                 print("Pickle file generated to load later after this session")
 
         QtWidgets.QMessageBox.information(self,
                                           "Success",
-                                          "File loaded successfully, you can add more files/proceed to plotting")
+                                          "The current state has been saved, so you can continue from here!")
 
     #################################################################################################
     #  Tab-3 -> Instantaneous plots tab:
