@@ -45,7 +45,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.load_tooltips()  # Loading all the tooltips
 
         self.com = Comtrade()  # Initializing at start so that it can be reused for all files.
-        self.all_files1 = {}  # TODO: rename to better variable
+        self.files_data_dict = {}
         self.groupBox.setEnabled(False)
 
         #################################################################################################
@@ -135,9 +135,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout_2.addWidget(self.scroll1)
 
         # Preparing the vertical layout that will hold plots
-        self.layout2 = QtWidgets.QVBoxLayout()
-        self.layout2.setAlignment(QtCore.Qt.AlignTop)
-        self.layout2.setSpacing(5)
+        self.tab3_plot_layout = QtWidgets.QVBoxLayout()
+        self.tab3_plot_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.tab3_plot_layout.setSpacing(5)
 
         # Variables to check which files have been plotted to avoid duplications
         self.plot_dict = {}
@@ -150,6 +150,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.q, self.z1, self.threshold = None, None, None
         self.super_q = None
         self.max_val = [0, 0]
+        self.min_val = 0
         self.segments = None
         self.signal_dataItems = {}
         self.difference_dataItems = {}
@@ -454,10 +455,10 @@ class MainWindow(QtWidgets.QMainWindow):
         scaling_values = {item: 1 for item in df.columns[1:]}
 
         # Creating a final nested dictionary which stores all the required data corresponding to the file.
-        self.all_files1[filename] = dict(data=df,
-                                         shift_values=shifting_values,
-                                         scaling_values=scaling_values,
-                                         color_dict=self.color_list[self.color_index])
+        self.files_data_dict[filename] = dict(data=df,
+                                              shift_values=shifting_values,
+                                              scaling_values=scaling_values,
+                                              color_dict=self.color_list[self.color_index])
 
         # TODO: make a graphic to show how the self.all_files dictionary will look with multiple files loaded.
         self.color_index += 1
@@ -467,7 +468,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_list_of_files.setText(self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
 
         # For tab-2:
-        self.file_names = list(self.all_files1.keys())
+        self.file_names = list(self.files_data_dict.keys())
         self.ComB_list_of_files.clear()
         self.ComB_list_of_files.addItems([""] + self.file_names)
         self.groupBox.setEnabled(True)
@@ -476,11 +477,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ComB_instantaneous_tab.clear()
         self.ComB_instantaneous_tab.addItems([""] + self.file_names)
 
-        print(self.all_files1[filename]['data'].keys())
+        print(self.files_data_dict[filename]['data'].keys())
 
         # Storing the final diction in pickle format(python binary file format), so that loading of the file is possible.
         with open(f"{self.LE_file_path.text()[:-4]}.pickle", "wb") as outfile:
-            pickle.dump(self.all_files1[filename], outfile)
+            pickle.dump(self.files_data_dict[filename], outfile)
             print("Pickle file generated to load later after this session")
 
         self.showMessage()
@@ -507,12 +508,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LW_attribute_list.clear()
 
         try:
-            # Here the self.all_files1 dictionary will be populated for the corresponding file.
+            # Here the self.files_data_dict dictionary will be populated for the corresponding file.
             with open(f"{self.file_path}", "rb") as infile:
-                self.all_files1[filename] = pickle.load(infile)
+                self.files_data_dict[filename] = pickle.load(infile)
 
             # Giving the signal particular color depending on color_list
-            self.all_files1[filename]['color_dict'] = self.color_list[self.color_index]
+            self.files_data_dict[filename]['color_dict'] = self.color_list[self.color_index]
             self.color_index += 1
 
             # Tab-1, populating the list of files that have been loaded
@@ -520,7 +521,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.label_list_of_files.setText(
                 self.label_list_of_files.text() + f"\n\n{self.number_of_files}. {filename}")
 
-            self.file_names = list(self.all_files1.keys())  # List of files that have been loaded.
+            self.file_names = list(self.files_data_dict.keys())  # List of files that have been loaded.
 
             # Tab-2 default behaviour
             self.groupBox.setEnabled(True)
@@ -663,20 +664,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Looping through all files and plotting.
         for file in self.file_names:
-            pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
-            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith(signal)]:
+            pen = pg.mkPen(color=self.files_data_dict[file]['color_dict'], width=1.5)
+            for column in [item for item in self.files_data_dict[file]['data'].keys() if item.startswith(signal)]:
                 # This conditional is required because Sequence transform required plotting the absolute value of the signal.
                 if plotIndex in [7, 8]:
                     self.tab2_plots[plotIndex].plot(
-                        self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                        np.abs(self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
-                        self.all_files1[file]['scaling_values'][column],
+                        self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
+                        np.abs(self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][
+                            column]) *
+                        self.files_data_dict[file]['scaling_values'][column],
                         pen=pen, name=file + f"_{column}")
                 else:
                     self.tab2_plots[plotIndex].plot(
-                        self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                        (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
-                        self.all_files1[file]['scaling_values'][column],
+                        self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
+                        (self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][
+                            column]) *
+                        self.files_data_dict[file]['scaling_values'][column],
                         pen=pen, name=file + f"_{column}")
 
     def move_horizontal(self, direction=1):
@@ -694,7 +697,7 @@ class MainWindow(QtWidgets.QMainWindow):
             new_val = round(float(self.x_shift_value.text()) + shift, 4)
             self.x_shift_value.setText(str(new_val))
 
-            self.all_files1[self.ComB_list_of_files.currentText()]['shift_values']['x'] += shift
+            self.files_data_dict[self.ComB_list_of_files.currentText()]['shift_values']['x'] += shift
             self.plot_signal()
 
         except KeyError as err:
@@ -718,7 +721,7 @@ class MainWindow(QtWidgets.QMainWindow):
             new_val = float(self.y_shift_value.text()) + shift
             self.y_shift_value.setText(str(new_val))
 
-            self.all_files1[self.ComB_list_of_files.currentText()]['shift_values'][
+            self.files_data_dict[self.ComB_list_of_files.currentText()]['shift_values'][
                 self.ComB_signals_list.currentText()] += float(self.y_shift_value.text())
             self.plot_signal()
 
@@ -741,7 +744,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.current_scale.setText(str(float(self.current_scale.text()) * float(self.LE_scaling_factor.text())))
             value = float(self.current_scale.text())
 
-            self.all_files1[self.ComB_list_of_files.currentText()]['scaling_values'][
+            self.files_data_dict[self.ComB_list_of_files.currentText()]['scaling_values'][
                 self.ComB_signals_list.currentText()] = value
 
             self.plot_signal()
@@ -756,7 +759,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.x_shift_value.setText('0')
         self.ComB_signals_list.clear()
         if filename != "":
-            self.ComB_signals_list.addItems([""] + list(self.all_files1[filename]['shift_values'].keys())[:-1])
+            self.ComB_signals_list.addItems([""] + list(self.files_data_dict[filename]['shift_values'].keys())[:-1])
 
     def hide_gb1(self):
         # Method to collapse the plot-selection area (Not really required, but logic can be used in different UIs)
@@ -781,7 +784,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for filename in self.file_names:
             with open(fr"C:\Users\dixit\OneDrive\Desktop\Folder_forGUI\pickle files\{filename}.pickle",
                       "wb") as outfile:
-                pickle.dump(self.all_files1[filename], outfile)
+                pickle.dump(self.files_data_dict[filename], outfile)
                 print("Pickle file generated to load later after this session")
 
         QtWidgets.QMessageBox.information(self,
@@ -792,7 +795,6 @@ class MainWindow(QtWidgets.QMainWindow):
     #  Tab-3 -> Instantaneous plots tab:
     #################################################################################################
     def plot_instantaneous(self):
-        # TODO: rename self.layout2 to something appropriate
         """
         Method to plot the 3 phase instantaneous signals, for each file, each set.
         """
@@ -812,8 +814,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                         "h_layout": []}
 
             # Calculating how many sets are present for the file
-            num_of_sets = max(len([item for item in self.all_files1[file]['data'].keys() if item.startswith("V")]),
-                              len([item for item in self.all_files1[file]['data'].keys() if item.startswith("I")])) // 3
+            num_of_sets = max(len([item for item in self.files_data_dict[file]['data'].keys() if item.startswith("V")]),
+                              len([item for item in self.files_data_dict[file]['data'].keys() if
+                                   item.startswith("I")])) // 3
 
             for val in range(num_of_sets):
                 layout = QtWidgets.QHBoxLayout()  # Creating a new horizontal layout which will store Voltage and Current plot of a set
@@ -829,12 +832,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 colors = ['r', 'y', 'b'] * 3  # => ['r', 'y', 'b', 'r', 'y', 'b', 'r', 'y', 'b']
 
                 color_count = 0
-                for column in [item for item in self.all_files1[file]['data'].keys() if
+                for column in [item for item in self.files_data_dict[file]['data'].keys() if
                                item.startswith("V") and item.endswith(str(val + 1))]:
                     pen = pg.mkPen(color=colors[color_count], width=1.5)
                     plot.plot(
-                        self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                        self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                        self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
+                        self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][column],
                         pen=pen, name=file + f"_{column}")
                     color_count += 1
 
@@ -848,12 +851,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 plot.setMaximumSize(550, 280)
                 color_count = 0
 
-                for column in [item for item in self.all_files1[file]['data'].keys() if
+                for column in [item for item in self.files_data_dict[file]['data'].keys() if
                                item.startswith("I") and item.endswith(str(val + 1))]:
                     pen = pg.mkPen(color=colors[color_count], width=1.5)
                     plot.plot(
-                        self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                        self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                        self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
+                        self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][column],
                         pen=pen, name=file + f"_{column}")
                     color_count += 1
 
@@ -862,11 +865,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.plot_dict[file]["h_layout"] += [layout]  # Adding the horizontal layout object to the dictionary
 
                 # Adding the complete horizontal layout which contains the voltage, current plot to the vertical layout.
-                self.layout2.addLayout(layout)
+                self.tab3_plot_layout.addLayout(layout)
 
             # Adding the vertical layout to the scroll area
             scrollContent = QtWidgets.QWidget()
-            scrollContent.setLayout(self.layout2)
+            scrollContent.setLayout(self.tab3_plot_layout)
             self.scroll1.setWidget(scrollContent)
 
             print(self.plot_dict)
@@ -882,7 +885,7 @@ class MainWindow(QtWidgets.QMainWindow):
         file = self.ComB_instantaneous_tab.currentText()
         if file in self.plotted_plot:
             for h_layout in self.plot_dict[file]["h_layout"]:
-                self.layout2.removeItem(h_layout)
+                self.tab3_plot_layout.removeItem(h_layout)
             for plot in self.plot_dict[file]['plots']:
                 plot.deleteLater()
             # Removing the file from the list (so that it can be added again if required)
@@ -912,6 +915,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.PW_signal_segment.clear()
         self.PW_difference_segment.clear()
+
+        self.signal_dataItems = {}
+        self.difference_dataItems = {}
+        self.max_val = [0, 0]
+        self.min_val = 0
+
         self.LE_threshold_value.setText("")
 
         threshold_pen = pg.mkPen(color=(0, 94, 255),
@@ -920,31 +929,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self.super_q = {}
 
         for file in self.file_names:
-            pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
-            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith(signal)]:
+            pen = pg.mkPen(color=self.files_data_dict[file]['color_dict'], width=1.5)
+            for column in [item for item in self.files_data_dict[file]['data'].keys() if item.startswith(signal)]:
                 self.q, self.z1, self.threshold = segment_function.segmentation_trendfilter(
-                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column])
+                    self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
+                    self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][column])
 
                 self.super_q[file] = [val for val in self.q]
 
-                signal_ = self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]
+                signal_ = self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][
+                    column]
+
                 self.max_val[0] = max(signal_) if self.max_val[0] < max(signal_) else self.max_val[0]
                 self.max_val[1] = max(self.z1) if self.max_val[1] < max(self.z1) else self.max_val[1]
+                self.min_val = min(signal_) if min(signal_) < self.min_val else self.min_val
 
                 self.signal_dataItems[file + f"_{column}"] = pg.PlotDataItem(
-                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                    (self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]) *
-                    self.all_files1[file]['scaling_values'][column], pen=pen, name=file + f"_{column}")
+                    self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
+                    (self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][column]) *
+                    self.files_data_dict[file]['scaling_values'][column], pen=pen, name=file + f"_{column}")
 
                 self.difference_dataItems[file + f"_{column}"] = pg.PlotDataItem(
-                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
                     self.z1, pen=pen)
 
                 self.PW_difference_segment.plot(
-                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
+                    self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
                     [self.threshold] * len(
-                        self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x']),
+                        self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x']),
                     pen=threshold_pen)
 
         self.merge_segments()
@@ -956,6 +968,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_difference_segment.clear()
 
     def calculate_manual_segmentation(self, signal):
+        # TODO: Fix manual segmentation
         """
         Calculates the segments based on the user given threshold value
         """
@@ -965,14 +978,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.threshold = float(self.LE_threshold_value.text())  # Reading the user provided threshold value
 
         for file in self.file_names:
-            pen = pg.mkPen(color=self.all_files1[file]['color_dict'], width=1.5)
-            for column in [item for item in self.all_files1[file]['data'].keys() if item.startswith(signal)]:
+            pen = pg.mkPen(color=self.files_data_dict[file]['color_dict'], width=1.5)
+            for column in [item for item in self.files_data_dict[file]['data'].keys() if item.startswith(signal)]:
                 self.q, self.z1 = segment_function.manual_segmentation_trendfilter(
-                    self.all_files1[file]['data']["Time"] + self.all_files1[file]['shift_values']['x'],
-                    self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column],
+                    self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
+                    self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][column],
                     self.threshold
                 )
-                signal_ = self.all_files1[file]['data'][column] + self.all_files1[file]['shift_values'][column]
+                signal_ = self.files_data_dict[file]['data'][column] + self.files_data_dict[file]['shift_values'][
+                    column]
                 self.super_q[file] = self.q
                 self.max_val[0] = max(signal_) if self.max_val[0] < max(signal_) else self.max_val[0]
                 self.max_val[1] = max(self.z1) if self.max_val[1] < max(self.z1) else self.max_val[1]
@@ -988,16 +1002,29 @@ class MainWindow(QtWidgets.QMainWindow):
                                width=1.5)  # Setting color of the actual segments we will be seeing (vertical lines) in RGB values
 
         self.PW_signal_segment.addLegend(offset=(350, 8))
-
-        # Plotting the difference
         self.PW_difference_segment.addLegend(offset=(350, 8))
 
-        for i in range(len(self.segments)):
-            self.signal_dataItems[f"left segment {i + 1}"] = pg.PlotDataItem([self.segments[i][0]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
-            self.signal_dataItems[f"right segment {i + 1}"] = pg.PlotDataItem([self.segments[i][-1]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+        if not self.segments:
+            for key in self.signal_dataItems.keys():
+                print(key)
+                self.PW_signal_segment.addItem(self.signal_dataItems[key])
+                self.PW_difference_segment.addItem(self.difference_dataItems[key])
+            return
+        else:
+            for i in range(len(self.segments)):
+                self.signal_dataItems[f"left segment {i + 1}"] = pg.PlotDataItem([self.segments[i][0]] * 3,
+                                                                                 [self.min_val, 0, self.max_val[0]],
+                                                                                 pen=segment_pen)
+                self.signal_dataItems[f"right segment {i + 1}"] = pg.PlotDataItem([self.segments[i][-1]] * 3,
+                                                                                  [self.min_val, 0, self.max_val[0]],
+                                                                                  pen=segment_pen)
 
-            self.difference_dataItems[f"left segment {i + 1}"] = pg.PlotDataItem([self.segments[i][0]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
-            self.difference_dataItems[f"right segment {i + 1}"] = pg.PlotDataItem([self.segments[i][-1]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+                self.difference_dataItems[f"left segment {i + 1}"] = pg.PlotDataItem([self.segments[i][0]] * 3,
+                                                                                     [0, 0, self.max_val[1]],
+                                                                                     pen=segment_pen)
+                self.difference_dataItems[f"right segment {i + 1}"] = pg.PlotDataItem([self.segments[i][-1]] * 3,
+                                                                                      [0, 0, self.max_val[1]],
+                                                                                      pen=segment_pen)
 
         print(self.signal_dataItems, self.difference_dataItems)
 
@@ -1006,44 +1033,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_signal_segment.addItem(self.signal_dataItems[key])
             self.PW_difference_segment.addItem(self.difference_dataItems[key])
         print("--------------------------------------------")
-        # Plotting the threshold together with the error plot
-
-        # The code below is for plotting the segments
-        # for i in range(len(self.q)):
-        #     # Each segment will have 2 lines
-        #     # Plotting 1st line in the signal plot
-        #     self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
-        #                                  self.all_files1[file]['shift_values']['x']] * 3,
-        #                                 np.linspace(min(self.all_files1[file]['data'][column] +
-        #                                                 self.all_files1[file]['shift_values'][column]),
-        #                                             max(self.all_files1[file]['data'][column] +
-        #                                                 self.all_files1[file]['shift_values'][column]), 3),
-        #                                 pen=segment_pen)
-        #
-        #     """
-        #     What is happening is, we can't plot using single x and y values, so 2 lists are created 1st one with values of the timestamp, and the other
-        #     with the min, max value of the provided signal.
-        #
-        #     Rough example: self.PW_signal_segment.plot([2, 2, 2], [0, 5, 10], pen=color), so segment will be created at t=2, and the magnitude will range from 0-10
-        #                                                               ↑_ we get this list using the np.linspace function and the 3 tells the function how many values between the first 2 arguments are needed.
-        #     """
-        #
-        #     # Plotting 2nd line in the signal plot
-        #     self.PW_signal_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
-        #                                  self.all_files1[file]['shift_values']['x']] * 3,
-        #                                 np.linspace(min(self.all_files1[file]['data'][column] +
-        #                                                 self.all_files1[file]['shift_values'][column]),
-        #                                             max(self.all_files1[file]['data'][column] +
-        #                                                 self.all_files1[file]['shift_values'][column]), 3),
-        #                                 pen=segment_pen)
-        #
-        #     # Plotting the segments in the error plot, similar to above
-        #     self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][0] - 1] +
-        #                                      self.all_files1[file]['shift_values']['x']] * 3,
-        #                                     np.linspace(0, max(self.z1), 3), pen=segment_pen)
-        #     self.PW_difference_segment.plot([self.all_files1[file]['data']["Time"][self.q[i][-1] + 1] +
-        #                                      self.all_files1[file]['shift_values']['x']] * 3,
-        #                                     np.linspace(0, max(self.z1), 3), pen=segment_pen)
 
     def manual_segmentation(self):
         """
@@ -1060,41 +1049,61 @@ class MainWindow(QtWidgets.QMainWindow):
             self.calculate_manual_segmentation("Frequency F_avg")
 
     def merge_segments(self):
-        # TODO: MAke better logic to merge the segments
         self.segments = None
+        self.ComB_segment_selection.clear()
+
         left = []
         right = []
 
+        print(f"{self.super_q= }")
         for file in self.super_q.keys():
-            for segment_indices in (self.super_q[file]):
-                left.append(
-                    self.all_files1[file]['data']['Time'][segment_indices[0]] + self.all_files1[file]['shift_values'][
-                        'x'])
-                right.append(
-                    self.all_files1[file]['data']['Time'][segment_indices[-1]] + self.all_files1[file]['shift_values'][
-                        'x'])
+            if len(self.super_q[file]) == 0:
+                continue
+            else:
+                for segment_indices in (self.super_q[file]):
+                    print((
+                            self.files_data_dict[file]['data']['Time'][segment_indices[0]] +
+                            self.files_data_dict[file]['shift_values'][
+                                'x']), (
+                            self.files_data_dict[file]['data']['Time'][segment_indices[-1]] +
+                            self.files_data_dict[file]['shift_values'][
+                                'x']))
+                    left.append(
+                        self.files_data_dict[file]['data']['Time'][segment_indices[0]] +
+                        self.files_data_dict[file]['shift_values'][
+                            'x'])
+                    right.append(
+                        self.files_data_dict[file]['data']['Time'][segment_indices[-1]] +
+                        self.files_data_dict[file]['shift_values'][
+                            'x'])
 
+        if (len(left) == 0) or (len(right) == 0):
+            return
+
+        print(f"{left= }, {right= }, {len(left)= }, {len(right)= }")
         left = sorted(left)
         right = sorted(right)
         seg_left = []
         seg_right = []
 
-        for i in range(1, len(left)):
-            if left[i] - left[i - 1] > 0.02:
-                seg_left.append(left[i - 1])
+        if len(left) > 1:
+            for i in range(1, len(left)):
+                print(f"{left[i]= }, {left[i - 1]= }, {left[i] - left[i - 1]= }")
+                if left[i] - left[i - 1] > 0.02:  # TODO: MAke better logic to merge the segments
+                    seg_left.append(left[i - 1])
+        else:
+            seg_left.append(left[0])
 
-        for i in range(1, len(right)):
-            if right[i] - right[i - 1] > 0.02:
-                seg_right.append(right[i])
-
+        if len(right) > 1:
+            for i in range(1, len(right)):
+                print(f"{right[i]= }, {right[i - 1]= }, {right[i] - right[i - 1]= }")
+                if right[i] - right[i - 1] > 0.02:
+                    seg_right.append(right[i])
+        else:
+            seg_right.append(right[0])
+        print(f"{seg_left= }, {seg_right= }")
         self.segments = list(map(list, zip(seg_left, seg_right)))
-        self.ComB_segment_selection.clear()
         self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
-
-        # Separate function for plotting using segments as argument
-
-    def plot_using_segments(self):
-        ...
 
     def plot_shifted_segments(self, what_to_shift, segment_num=0):
         segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)
@@ -1120,11 +1129,15 @@ class MainWindow(QtWidgets.QMainWindow):
         print("Adding the new segments")
         if what_to_shift == "Both":
             print("Both")
-            self.signal_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem([self.segments[segment_num][0]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
-            self.signal_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem([self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+            self.signal_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem(
+                [self.segments[segment_num][0]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+            self.signal_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem(
+                [self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
 
-            self.difference_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem([self.segments[segment_num][0]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
-            self.difference_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem([self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+            self.difference_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem(
+                [self.segments[segment_num][0]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+            self.difference_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem(
+                [self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
         elif what_to_shift == "Left":
             print("L")
             self.signal_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem(
@@ -1145,7 +1158,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_difference_segment.addItem(self.difference_dataItems[val])
 
     def shift_segment(self):
-        # TODO: Plot together with error plot, and signal plot might have to make new potting function
         segment_to_shift = int(self.ComB_segment_selection.currentText())
         what_to_shift = self.ComB_what2move.currentText()
         shift_value = float(self.LE_segment_shift_value.text())
