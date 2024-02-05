@@ -458,7 +458,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.files_data_dict[filename] = dict(data=df,
                                               shift_values=shifting_values,
                                               scaling_values=scaling_values,
-                                              color_dict=self.color_list[self.color_index])
+                                              plot_color=self.color_list[self.color_index])
 
         # TODO: make a graphic to show how the self.all_files dictionary will look with multiple files loaded.
         self.color_index += 1
@@ -513,7 +513,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.files_data_dict[filename] = pickle.load(infile)
 
             # Giving the signal particular color depending on color_list
-            self.files_data_dict[filename]['color_dict'] = self.color_list[self.color_index]
+            self.files_data_dict[filename]['plot_color'] = self.color_list[self.color_index]
             self.color_index += 1
 
             # Tab-1, populating the list of files that have been loaded
@@ -664,7 +664,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Looping through all files and plotting.
         for file in self.file_names:
-            pen = pg.mkPen(color=self.files_data_dict[file]['color_dict'], width=1.5)
+            pen = pg.mkPen(color=self.files_data_dict[file]['plot_color'], width=1.5)
             for column in [item for item in self.files_data_dict[file]['data'].keys() if item.startswith(signal)]:
                 # This conditional is required because Sequence transform required plotting the absolute value of the signal.
                 if plotIndex in [7, 8]:
@@ -899,12 +899,7 @@ class MainWindow(QtWidgets.QMainWindow):
     #################################################################################################
     #  Tab-4 -> Segmentation tab:
     #################################################################################################
-    # TODO: The next 2 methods can be merged into 1
-    #  Merge this and manual segmentation to one function, which takes in argument if threshold line edit,
-    #  if the value of line edit is empty, then perform automatic segmentation else perform manual segmentation
-
     def calculate_segmentation(self, signal, button):
-        # TODO: add the q values of each file in other variable which will store the q's of all the data (may not be required)
         """
         Calculates the segments based on the automatically calculated threshold, which uses the formula of [std_dev + 5 * mean]
         To change the default formula you can do so in "segmentation_functions.py" file on line 45
@@ -929,7 +924,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.super_q = {}
 
         for file in self.file_names:
-            pen = pg.mkPen(color=self.files_data_dict[file]['color_dict'], width=1.5)
+            pen = pg.mkPen(color=self.files_data_dict[file]['plot_color'], width=1.5)
             for column in [item for item in self.files_data_dict[file]['data'].keys() if item.startswith(signal)]:
                 self.q, self.z1, self.threshold = segment_function.segmentation_trendfilter(
                     self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
@@ -968,17 +963,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_difference_segment.clear()
 
     def calculate_manual_segmentation(self, signal):
-        # TODO: Fix manual segmentation
         """
         Calculates the segments based on the user given threshold value
         """
         self.PW_signal_segment.clear()
         self.PW_difference_segment.clear()
 
+        threshold_pen = pg.mkPen(color=(0, 94, 255), width=1.5)
         self.threshold = float(self.LE_threshold_value.text())  # Reading the user provided threshold value
 
         for file in self.file_names:
-            pen = pg.mkPen(color=self.files_data_dict[file]['color_dict'], width=1.5)
+            pen = pg.mkPen(color=self.files_data_dict[file]['plot_color'], width=1.5)
             for column in [item for item in self.files_data_dict[file]['data'].keys() if item.startswith(signal)]:
                 self.q, self.z1 = segment_function.manual_segmentation_trendfilter(
                     self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
@@ -991,7 +986,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.max_val[0] = max(signal_) if self.max_val[0] < max(signal_) else self.max_val[0]
                 self.max_val[1] = max(self.z1) if self.max_val[1] < max(self.z1) else self.max_val[1]
 
-                self.plot_segmentation(file, column, pen)
+                self.PW_difference_segment.plot(
+                    self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x'],
+                    [self.threshold] * len(
+                        self.files_data_dict[file]['data']["Time"] + self.files_data_dict[file]['shift_values']['x']),
+                    pen=threshold_pen)
+
+            self.merge_segments()
+            self.plot_segmentation()
 
     def plot_segmentation(self):
         """
@@ -1089,7 +1091,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(left) > 1:
             for i in range(1, len(left)):
                 print(f"{left[i]= }, {left[i - 1]= }, {left[i] - left[i - 1]= }")
-                if left[i] - left[i - 1] > 0.02:  # TODO: MAke better logic to merge the segments
+                if left[i] - left[i - 1] > 0.02:  # TODO: Make better logic to merge the segments
                     seg_left.append(left[i - 1])
         else:
             seg_left.append(left[0])
@@ -1108,7 +1110,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def plot_shifted_segments(self, what_to_shift, segment_num=0):
         segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)
 
-        # TODO: Create a list storing all the plot data items, signal as well as the segments, so to add/remove the data points easily and effortlessly
         if what_to_shift == "Both":
             key = [f"left segment {segment_num + 1}", f"right segment {segment_num + 1}"]
         elif what_to_shift == "Left":
