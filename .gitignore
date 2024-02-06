@@ -4,6 +4,11 @@
 .idea
 drag_drop_exmaple.py
 Documentation.md
+Dynamic_plotting.py
+Dynamic_plotting.ui
+form.ui
+form_scribble.ui
+mainwindow.py
 *~
 *.autosave
 *.a
