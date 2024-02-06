@@ -2,6 +2,7 @@
 # ----------------------------------------------------------------------------
 /venv/
 .idea
+/Version-1
 drag_drop_exmaple.py
 Documentation.md
 Dynamic_plotting.py

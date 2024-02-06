@@ -482,7 +482,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                               scaling_values=scaling_values,
                                               plot_color=self.color_list[self.color_index])
 
-        # TODO: make a graphic to show how the self.all_files dictionary will look with multiple files loaded.
         self.color_index += 1
 
         # For tab-1
@@ -609,7 +608,6 @@ class MainWindow(QtWidgets.QMainWindow):
     # Tab-2 -> Signal plotting tab:
     ################################################################################################
     def plot_signal(self, ):
-        # TODO: Can be done=> Separate this method into smaller methods, which call particular plots. Ex: 1 method for Voltage_rms, 1 for current_rms and so on...
         # Calling function depending on the checkbox selected
         if self.CB_voltage_rms.isChecked():
             self.plot_selected_signals(0, "RMS_voltage")
