@@ -1,0 +1,8 @@
+Download the repository by downloading the zip file from git hub or by using the Git clone command.
+
+Once downloaded, you can start a python virtual environment (Optional, Recommended) using "python -m venv venv" on the cli
+    If you have created a new virtual env, activate it using "./venv/Scripts/activate" command on the cli.
+
+Install all the required libraries using "pip install -r requirements.txt" on the cli.
+
+Run the program using "python ExpertSystem.py"
