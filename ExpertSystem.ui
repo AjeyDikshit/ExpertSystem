@@ -1897,6 +1897,29 @@
        <string>Shift segment</string>
       </property>
      </widget>
+     <widget class="QLineEdit" name="LE_add_segment_value">
+      <property name="geometry">
+       <rect>
+        <x>800</x>
+        <y>310</y>
+        <width>113</width>
+        <height>24</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_add_segments">
+      <property name="geometry">
+       <rect>
+        <x>930</x>
+        <y>310</y>
+        <width>131</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Add segments</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>

@@ -1218,6 +1218,41 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_signal_segment.addItem(self.signal_dataItems[val])
             self.PW_difference_segment.addItem(self.difference_dataItems[val])
 
+    def add_segments(self):
+        segments_to_add = eval(self.LE_add_segment_value.text())
+        max_dur = 0
+
+        for file in self.file_names:
+            max_time = max(self.files_data_dict[file]['data']['Time'])
+            if max_time > max_dur:
+                max_dur = max_time
+                max_file = file
+
+        time_rounded = list(np.around(
+            np.array(self.files_data_dict[max_file]['data']["Time"] + self.files_data_dict[max_file]['shift_values']['x']), 2))
+
+        for time_value in segments_to_add:
+            try:
+                self.q.insert(1, [time_rounded.index(time_value) - 4, time_rounded.index(time_value) + 4])
+            except ValueError as err:
+                print(f'Please change time to add, the step size is {time_rounded[1] - time_rounded[0]}')
+                return
+
+        self.super_q[file] = [val for val in sorted(self.q)]
+
+        keys = [val for val in self.signal_dataItems.keys() if val.startswith("left") or val.startswith("right")]
+        for val in keys:
+            print("Removing the items", val)
+            print(self.signal_dataItems[val])
+            self.PW_signal_segment.removeItem(self.signal_dataItems[val])
+            del self.signal_dataItems[val]
+
+            self.PW_difference_segment.removeItem(self.difference_dataItems[val])
+            del self.difference_dataItems[val]
+
+        self.merge_segments()
+        self.plot_segmentation()
+
     def shift_segment(self):
         segment_to_shift = int(self.ComB_segment_selection.currentText())
         what_to_shift = self.ComB_what2move.currentText()
