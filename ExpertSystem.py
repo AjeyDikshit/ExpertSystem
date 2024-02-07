@@ -498,8 +498,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ComB_instantaneous_tab.clear()
         self.ComB_instantaneous_tab.addItems([""] + self.file_names)
 
-        print(self.files_data_dict[filename]['data'].keys())
-
         # Storing the final diction in pickle format(python binary file format), so that loading of the file is possible.
         with open(f"{self.LE_file_path.text()[:-4]}.pickle", "wb") as outfile:
             pickle.dump(self.files_data_dict[filename], outfile)
@@ -931,7 +929,6 @@ class MainWindow(QtWidgets.QMainWindow):
             scrollContent.setLayout(self.tab3_plot_layout)
             self.scroll1.setWidget(scrollContent)
 
-            print(self.plot_dict)
         else:
             QtWidgets.QMessageBox.information(self,
                                               "Error",
@@ -1016,7 +1013,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.merge_segments()
         self.plot_segmentation()
 
-        # print(self.super_q)
         if not any([button.isChecked() for button in self.tab_3.findChildren(QtWidgets.QCheckBox)]):
             self.PW_signal_segment.clear()
             self.PW_difference_segment.clear()
@@ -1067,7 +1063,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if not self.segments:
             for key in self.signal_dataItems.keys():
-                print(key)
                 self.PW_signal_segment.addItem(self.signal_dataItems[key])
                 self.PW_difference_segment.addItem(self.difference_dataItems[key])
             return
@@ -1087,13 +1082,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                                       [0, 0, self.max_val[1]],
                                                                                       pen=segment_pen)
 
-        print(self.signal_dataItems, self.difference_dataItems)
-
         for key in self.signal_dataItems.keys():
-            print(key)
             self.PW_signal_segment.addItem(self.signal_dataItems[key])
             self.PW_difference_segment.addItem(self.difference_dataItems[key])
-        print("--------------------------------------------")
 
     def manual_segmentation(self):
         """
@@ -1116,19 +1107,11 @@ class MainWindow(QtWidgets.QMainWindow):
         left = []
         right = []
 
-        print(f"{self.super_q= }")
         for file in self.super_q.keys():
             if len(self.super_q[file]) == 0:
                 continue
             else:
                 for segment_indices in (self.super_q[file]):
-                    print((
-                            self.files_data_dict[file]['data']['Time'][segment_indices[0]] +
-                            self.files_data_dict[file]['shift_values'][
-                                'x']), (
-                            self.files_data_dict[file]['data']['Time'][segment_indices[-1]] +
-                            self.files_data_dict[file]['shift_values'][
-                                'x']))
                     left.append(
                         self.files_data_dict[file]['data']['Time'][segment_indices[0]] +
                         self.files_data_dict[file]['shift_values'][
@@ -1141,7 +1124,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if (len(left) == 0) or (len(right) == 0):
             return
 
-        print(f"{left= }, {right= }, {len(left)= }, {len(right)= }")
         left = sorted(left)
         right = sorted(right)
         seg_left = []
@@ -1150,7 +1132,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO: Make better logic to merge the segments, quite buggy in some scenarios
         if len(left) > 1:
             for i in range(1, len(left)):
-                print(f"{left[i]= }, {left[i - 1]= }, {left[i] - left[i - 1]= }")
                 if left[i] - left[i - 1] > 0.02:
                     seg_left.append(left[i - 1])
         else:
@@ -1158,12 +1139,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if len(right) > 1:
             for i in range(1, len(right)):
-                print(f"{right[i]= }, {right[i - 1]= }, {right[i] - right[i - 1]= }")
                 if right[i] - right[i - 1] > 0.02:
                     seg_right.append(right[i])
         else:
             seg_right.append(right[0])
-        print(f"{seg_left= }, {seg_right= }")
         self.segments = list(map(list, zip(seg_left, seg_right)))
         self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
 
@@ -1178,8 +1157,6 @@ class MainWindow(QtWidgets.QMainWindow):
             key = [f"right segment {segment_num + 1}"]
 
         for val in key:
-            print("Removing the items", val)
-            print(self.signal_dataItems[val])
             self.PW_signal_segment.removeItem(self.signal_dataItems[val])
             del self.signal_dataItems[val]
 
@@ -1187,9 +1164,7 @@ class MainWindow(QtWidgets.QMainWindow):
             del self.difference_dataItems[val]
 
         # for i in range(len(self.segments)):
-        print("Adding the new segments")
         if what_to_shift == "Both":
-            print("Both")
             self.signal_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem(
                 [self.segments[segment_num][0]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
             self.signal_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem(
@@ -1200,21 +1175,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.difference_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem(
                 [self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
         elif what_to_shift == "Left":
-            print("L")
             self.signal_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem(
                 [self.segments[segment_num][0]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
             self.difference_dataItems[f"left segment {segment_num + 1}"] = pg.PlotDataItem(
                 [self.segments[segment_num][0]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
         elif what_to_shift == "Right":
-            print("R")
             self.signal_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem(
                 [self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
             self.difference_dataItems[f"right segment {segment_num + 1}"] = pg.PlotDataItem(
                 [self.segments[segment_num][-1]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
 
         for val in key:
-            print("Plotting the new segments")
-            print(val)
             self.PW_signal_segment.addItem(self.signal_dataItems[val])
             self.PW_difference_segment.addItem(self.difference_dataItems[val])
 
@@ -1244,8 +1215,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         keys = [val for val in self.signal_dataItems.keys() if val.startswith("left") or val.startswith("right")]
         for val in keys:
-            print("Removing the items", val)
-            print(self.signal_dataItems[val])
             self.PW_signal_segment.removeItem(self.signal_dataItems[val])
             del self.signal_dataItems[val]
 
@@ -1267,12 +1236,18 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.segments[segment_to_shift][0] + shift_value < self.segments[segment_to_shift][-1]:
                 self.segments[segment_to_shift][0] += shift_value
             else:
-                print("Left segment can't move anymore")
+                QtWidgets.QMessageBox.information(self,
+                                                  "Error",
+                                                  "Left segment can't move anymore")
+                return
         elif what_to_shift == 'Right':
             if self.segments[segment_to_shift][-1] + shift_value > self.segments[segment_to_shift][0]:
                 self.segments[segment_to_shift][-1] += shift_value
             else:
-                print("Right segment can't move anymore")
+                QtWidgets.QMessageBox.information(self,
+                                                  "Error",
+                                                  "Right segment can't move anymore")
+                return
 
         # self.plot_using_segments(segment_to_shift)
         self.plot_shifted_segments(what_to_shift, segment_to_shift)
