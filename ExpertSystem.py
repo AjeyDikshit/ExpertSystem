@@ -1224,7 +1224,6 @@ class MainWindow(QtWidgets.QMainWindow):
             segments_to_add = [segments_to_add]
 
         max_dur = 0
-
         for file in self.file_names:
             max_time = max(self.files_data_dict[file]['data']['Time'])
             if max_time > max_dur:
