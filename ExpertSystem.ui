@@ -1934,7 +1934,7 @@
   <customwidget>
    <class>DeselectableTreeView</class>
    <extends>QListWidget</extends>
-   <header>Trial_UI_V2</header>
+   <header>ExpertSystem</header>
   </customwidget>
  </customwidgets>
  <resources/>
