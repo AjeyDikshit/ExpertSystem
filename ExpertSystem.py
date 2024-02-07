@@ -37,7 +37,7 @@ There are some "rules" I have followed when naming the UI attributes, they are a
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        uic.loadUi('Trial_UI_V2.ui', self)
+        uic.loadUi('ExpertSystem.ui', self)
 
         #################################################################################################
         #  General:
@@ -1147,10 +1147,11 @@ class MainWindow(QtWidgets.QMainWindow):
         seg_left = []
         seg_right = []
 
+        # TODO: Make better logic to merge the segments, quite buggy in some scenarios
         if len(left) > 1:
             for i in range(1, len(left)):
                 print(f"{left[i]= }, {left[i - 1]= }, {left[i] - left[i - 1]= }")
-                if left[i] - left[i - 1] > 0.02:  # TODO: Make better logic to merge the segments
+                if left[i] - left[i - 1] > 0.02:
                     seg_left.append(left[i - 1])
         else:
             seg_left.append(left[0])
