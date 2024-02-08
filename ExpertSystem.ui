@@ -1834,24 +1834,24 @@
      <widget class="QLineEdit" name="LE_segment_shift_value">
       <property name="geometry">
        <rect>
-        <x>863</x>
+        <x>900</x>
         <y>450</y>
         <width>81</width>
         <height>24</height>
        </rect>
       </property>
      </widget>
-     <widget class="QPushButton" name="PB_shift_segment">
+     <widget class="QPushButton" name="PB_shift_segment_right">
       <property name="geometry">
        <rect>
-        <x>958</x>
+        <x>980</x>
         <y>450</y>
-        <width>111</width>
+        <width>31</width>
         <height>25</height>
        </rect>
       </property>
       <property name="text">
-       <string>Shift segment</string>
+       <string>&gt;</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="LE_add_segment_value">
@@ -1898,6 +1898,19 @@
         <width>113</width>
         <height>24</height>
        </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_shift_segment_left">
+      <property name="geometry">
+       <rect>
+        <x>870</x>
+        <y>450</y>
+        <width>31</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>&lt;</string>
       </property>
      </widget>
     </widget>

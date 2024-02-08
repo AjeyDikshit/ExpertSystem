@@ -194,7 +194,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.PB_manual_segmentation.clicked.connect(self.manual_segmentation)
 
-        self.PB_shift_segment.clicked.connect(self.shift_segment)
+        self.PB_shift_segment_left.clicked.connect(lambda: self.shift_segment(-1))
+        self.PB_shift_segment_right.clicked.connect(lambda: self.shift_segment(1))
 
     #################################################################################################
     #  Tab-1 -> User input area:
@@ -1194,9 +1195,15 @@ class MainWindow(QtWidgets.QMainWindow):
         print("after")
         print(self.signal_dataItems.keys())
 
-    def shift_segment(self):
+    def shift_segment(self, direction=1):
+        if self.LE_segment_shift_value.text() == "":
+            QtWidgets.QMessageBox.information(self,
+                                              "Error",
+                                              "Enter a valid shift value")
+            return
+
         segment_to_shift = int(self.ComB_segment_selection.currentText())
-        shift_value = float(self.LE_segment_shift_value.text())
+        shift_value = direction * float(self.LE_segment_shift_value.text())
 
         self.segments[segment_to_shift] += shift_value
 
