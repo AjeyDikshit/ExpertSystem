@@ -1799,7 +1799,7 @@
       <property name="geometry">
        <rect>
         <x>790</x>
-        <y>370</y>
+        <y>403</y>
         <width>71</width>
         <height>16</height>
        </rect>
@@ -1812,7 +1812,7 @@
       <property name="geometry">
        <rect>
         <x>852</x>
-        <y>367</y>
+        <y>400</y>
         <width>75</width>
         <height>24</height>
        </rect>
@@ -1822,7 +1822,7 @@
       <property name="geometry">
        <rect>
         <x>950</x>
-        <y>370</y>
+        <y>403</y>
         <width>91</width>
         <height>16</height>
        </rect>
@@ -1835,7 +1835,7 @@
       <property name="geometry">
        <rect>
         <x>1044</x>
-        <y>366</y>
+        <y>399</y>
         <width>75</width>
         <height>24</height>
        </rect>
@@ -1865,7 +1865,7 @@
       <property name="geometry">
        <rect>
         <x>790</x>
-        <y>420</y>
+        <y>453</y>
         <width>71</width>
         <height>16</height>
        </rect>
@@ -1878,7 +1878,7 @@
       <property name="geometry">
        <rect>
         <x>863</x>
-        <y>417</y>
+        <y>450</y>
         <width>81</width>
         <height>24</height>
        </rect>
@@ -1888,7 +1888,7 @@
       <property name="geometry">
        <rect>
         <x>958</x>
-        <y>417</y>
+        <y>450</y>
         <width>111</width>
         <height>25</height>
        </rect>
@@ -1918,6 +1918,29 @@
       </property>
       <property name="text">
        <string>Add segments</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="PB_remove_segments">
+      <property name="geometry">
+       <rect>
+        <x>930</x>
+        <y>350</y>
+        <width>131</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Remove segments</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="LE_remove_segment_value">
+      <property name="geometry">
+       <rect>
+        <x>800</x>
+        <y>350</y>
+        <width>113</width>
+        <height>24</height>
+       </rect>
       </property>
      </widget>
     </widget>

@@ -180,6 +180,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.PW_signal_segment.showGrid(x=True, y=True, alpha=1)
         self.PW_difference_segment.showGrid(x=True, y=True, alpha=1)
 
+        self.PB_add_segments.clicked.connect(self.add_segments)
+        self.PB_remove_segments.clicked.connect(self.delete_segments)
+
         # Calling functions
         self.CB_segment_voltage.stateChanged.connect(
             lambda: self.calculate_segmentation("RMS_voltage", self.CB_segment_voltage))
@@ -1223,6 +1226,30 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.merge_segments()
         self.plot_segmentation()
+
+    def delete_segments(self):
+
+        segments_remove = eval(self.LE_remove_segment_value.text())
+        # self.super_q[file] = [val for val in sorted(self.q)]
+        print(self.signal_dataItems.keys())
+
+        keys = [val for val in segments_remove if
+                self.signal_dataItems[f"left segment {val + 1}"] or self.signal_dataItems[f"right segment {val + 1}"]]
+
+        for val in keys:
+            print("Removing the items", val)
+            print(self.signal_dataItems[f"left segment {val + 1}"])
+            self.PW_signal_segment.removeItem(self.signal_dataItems[f"left segment {val + 1}"])
+            self.PW_signal_segment.removeItem(self.signal_dataItems[f"right segment {val + 1}"])
+            del self.signal_dataItems[f"left segment {val + 1}"]
+            del self.signal_dataItems[f"right segment {val + 1}"]
+
+            self.PW_difference_segment.removeItem(self.difference_dataItems[f"left segment {val + 1}"])
+            self.PW_difference_segment.removeItem(self.difference_dataItems[f"right segment {val + 1}"])
+            del self.difference_dataItems[f"left segment {val + 1}"]
+            del self.difference_dataItems[f"right segment {val + 1}"]
+
+            self.ComB_segment_selection.removeItem(self.ComB_segment_selection.findText(str(val)))
 
     def shift_segment(self):
         segment_to_shift = int(self.ComB_segment_selection.currentText())
