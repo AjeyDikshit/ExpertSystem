@@ -1067,20 +1067,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.PW_signal_segment.addLegend(offset=(350, 8))
         self.PW_difference_segment.addLegend(offset=(350, 8))
 
-        for i in range(len(self.segments)):
-            self.signal_dataItems[f"segment {i + 1}"] = pg.PlotDataItem([self.segments[i]] * 3,
-                                                                        [self.min_val, 0, self.max_val[0]],
-                                                                        pen=segment_pen)
-            self.difference_dataItems[f"segment {i + 1}"] = pg.PlotDataItem([self.segments[i]] * 3,
-                                                                            [0, 0, self.max_val[1]],
+        if self.segments is not None:
+            for i in range(len(self.segments)):
+                self.signal_dataItems[f"segment {i + 1}"] = pg.PlotDataItem([self.segments[i]] * 3,
+                                                                            [self.min_val, 0, self.max_val[0]],
                                                                             pen=segment_pen)
+                self.difference_dataItems[f"segment {i + 1}"] = pg.PlotDataItem([self.segments[i]] * 3,
+                                                                                [0, 0, self.max_val[1]],
+                                                                                pen=segment_pen)
+            self.ComB_segment_selection.clear()
+            self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
 
         for key in self.signal_dataItems.keys():
             self.PW_signal_segment.addItem(self.signal_dataItems[key])
             self.PW_difference_segment.addItem(self.difference_dataItems[key])
-
-        self.ComB_segment_selection.clear()
-        self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
 
     def manual_segmentation(self):
         """
@@ -1138,6 +1138,7 @@ class MainWindow(QtWidgets.QMainWindow):
             segments_to_add = [segments_to_add]
 
         max_dur = 0
+        max_file = None
         for file in self.file_names:
             max_time = max(self.files_data_dict[file]['data']['Time'])
             if max_time > max_dur:
@@ -1148,6 +1149,9 @@ class MainWindow(QtWidgets.QMainWindow):
             np.array(
                 self.files_data_dict[max_file]['data']["Time"] + self.files_data_dict[max_file]['shift_values']['x']),
             2))
+
+        if self.segments is None:
+            self.segments = []
 
         for time_value in segments_to_add:
             try:
@@ -1192,6 +1196,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_difference_segment.removeItem(self.difference_dataItems[val])
             del self.difference_dataItems[val]
 
+        # TODO: Rename the keys again in signal_dataItems, then uncomment the next 2 lines
+        # self.ComB_segment_selection.clear()
+        # self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
         print("after")
         print(self.signal_dataItems.keys())
 
@@ -1221,11 +1228,12 @@ class MainWindow(QtWidgets.QMainWindow):
             del self.difference_dataItems[val]
 
         # for i in range(len(self.segments)):
+        print(self.max_val)
         self.signal_dataItems[f"segment {segment_num + 1}"] = pg.PlotDataItem(
-            [self.segments[segment_num]] * 3, [0, 5, self.max_val[0]], pen=segment_pen)
+            [self.segments[segment_num]] * 2, [0, self.max_val[0]], pen=segment_pen)
 
         self.difference_dataItems[f"segment {segment_num + 1}"] = pg.PlotDataItem(
-            [self.segments[segment_num]] * 3, [0, 5, self.max_val[1]], pen=segment_pen)
+            [self.segments[segment_num]] * 2, [0, self.max_val[1]], pen=segment_pen)
 
         for val in key:
             self.PW_signal_segment.addItem(self.signal_dataItems[val])
