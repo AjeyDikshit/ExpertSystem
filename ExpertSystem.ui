@@ -1703,7 +1703,7 @@
      <widget class="QLineEdit" name="LE_threshold_value">
       <property name="geometry">
        <rect>
-        <x>961</x>
+        <x>991</x>
         <y>226</y>
         <width>113</width>
         <height>24</height>
@@ -1713,7 +1713,7 @@
      <widget class="QLabel" name="label_13">
       <property name="geometry">
        <rect>
-        <x>860</x>
+        <x>890</x>
         <y>230</y>
         <width>111</width>
         <height>16</height>
@@ -1726,7 +1726,7 @@
      <widget class="QPushButton" name="PB_manual_segmentation">
       <property name="geometry">
        <rect>
-        <x>890</x>
+        <x>920</x>
         <y>260</y>
         <width>161</width>
         <height>25</height>
@@ -1799,20 +1799,21 @@
       <property name="geometry">
        <rect>
         <x>790</x>
-        <y>403</y>
-        <width>71</width>
-        <height>16</height>
+        <y>390</y>
+        <width>91</width>
+        <height>51</height>
        </rect>
       </property>
       <property name="text">
-       <string>Segment:</string>
+       <string>Select segment 
+to shift:</string>
       </property>
      </widget>
      <widget class="QComboBox" name="ComB_segment_selection">
       <property name="geometry">
        <rect>
-        <x>852</x>
-        <y>400</y>
+        <x>890</x>
+        <y>410</y>
         <width>75</width>
         <height>24</height>
        </rect>
@@ -1911,6 +1912,86 @@
       </property>
       <property name="text">
        <string>&lt;</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="TT_add_segments">
+      <property name="geometry">
+       <rect>
+        <x>1070</x>
+        <y>315</y>
+        <width>16</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
+      </property>
+      <property name="toolTipDuration">
+       <number>5000</number>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap>question.png</pixmap>
+      </property>
+      <property name="scaledContents">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="TT_remove_segments">
+      <property name="geometry">
+       <rect>
+        <x>1070</x>
+        <y>356</y>
+        <width>16</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16</width>
+        <height>16</height>
+       </size>
+      </property>
+      <property name="toolTipDuration">
+       <number>5000</number>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap>question.png</pixmap>
+      </property>
+      <property name="scaledContents">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>

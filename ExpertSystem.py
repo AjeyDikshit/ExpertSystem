@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 import sys
 
+import numpy
 from PyQt5 import QtWidgets, QtCore
 from PyQt5 import uic
 import pandas as pd
@@ -973,6 +974,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.PW_signal_segment.clear()
         self.PW_difference_segment.clear()
 
+        self.LE_add_segment_value.clear()
+        self.LE_remove_segment_value.clear()
+        self.LE_segment_shift_value.clear()
+
         self.signal_dataItems = {}
         self.difference_dataItems = {}
         self.max_val = [0, 0]
@@ -1029,6 +1034,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.PW_signal_segment.clear()
         self.PW_difference_segment.clear()
+        self.LE_segment_shift_value.setText("")
 
         threshold_pen = pg.mkPen(color=(0, 94, 255), width=1.5)
         self.threshold = float(self.LE_threshold_value.text())  # Reading the user provided threshold value
@@ -1076,7 +1082,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                                 [0, 0, self.max_val[1]],
                                                                                 pen=segment_pen)
             self.ComB_segment_selection.clear()
-            self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
+            self.ComB_segment_selection.addItems([""] + [str(val + 1) for val in range(len(self.segments))])
 
         for key in self.signal_dataItems.keys():
             self.PW_signal_segment.addItem(self.signal_dataItems[key])
@@ -1130,7 +1136,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 prev_value = value
 
         self.segments = output_list
-        self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
+        self.ComB_segment_selection.addItems([""] + [str(val + 1) for val in range(len(self.segments))])
 
     def add_segments(self):
         segments_to_add = eval(self.LE_add_segment_value.text())
@@ -1162,20 +1168,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.segments = sorted(list(set(self.segments)))
         keys = [val for val in self.signal_dataItems.keys() if val.startswith("segment")]
+        print(keys)
         for val in keys:
+            print(val)
             self.PW_signal_segment.removeItem(self.signal_dataItems[val])
             del self.signal_dataItems[val]
 
             self.PW_difference_segment.removeItem(self.difference_dataItems[val])
             del self.difference_dataItems[val]
 
-        # self.merge_segments()
-        print(f"{self.segments= }")
         self.plot_segmentation()
 
     def delete_segments(self):
-        segments_remove = eval(self.LE_remove_segment_value.text())
-        if type(segments_remove) in [float, int]:
+        segments_remove = np.array(eval(self.LE_remove_segment_value.text())) - 1
+        if type(segments_remove) in [float, int, numpy.int32]:
             segments_remove = [segments_remove]
 
         keys = []
@@ -1185,22 +1191,21 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ComB_segment_selection.removeItem(self.ComB_segment_selection.findText(str(i)))
 
         self.segments = [val for val in self.segments if val is not None]
-        print("After", self.segments)
-        print(self.signal_dataItems.keys())
 
         for val in keys:
-            print(val)
             self.PW_signal_segment.removeItem(self.signal_dataItems[val])
             del self.signal_dataItems[val]
 
             self.PW_difference_segment.removeItem(self.difference_dataItems[val])
             del self.difference_dataItems[val]
 
-        # TODO: Rename the keys again in signal_dataItems, then uncomment the next 2 lines
-        # self.ComB_segment_selection.clear()
-        # self.ComB_segment_selection.addItems([""] + list(map(str, list(range(len(self.segments))))))
-        print("after")
-        print(self.signal_dataItems.keys())
+        key = [v for v in self.signal_dataItems.keys() if v.startswith("segment")]
+        for v, new_key in zip(list(key), list(range(len(self.segments)))):
+            self.signal_dataItems[f"segment {new_key + 1}"] = self.signal_dataItems.pop(v)
+            self.difference_dataItems[f"segment {new_key + 1}"] = self.difference_dataItems.pop(v)
+
+        self.ComB_segment_selection.clear()
+        self.ComB_segment_selection.addItems([""] + [str(val + 1) for val in range(len(self.segments))])
 
     def shift_segment(self, direction=1):
         if self.LE_segment_shift_value.text() == "":
@@ -1209,17 +1214,16 @@ class MainWindow(QtWidgets.QMainWindow):
                                               "Enter a valid shift value")
             return
 
-        segment_to_shift = int(self.ComB_segment_selection.currentText())
+        segment_to_shift = int(self.ComB_segment_selection.currentText()) - 1
         shift_value = direction * float(self.LE_segment_shift_value.text())
 
         self.segments[segment_to_shift] += shift_value
-
         self.plot_shifted_segments(segment_to_shift)
 
-    def plot_shifted_segments(self, segment_num=0):
+    def plot_shifted_segments(self, segment_num):
         segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)
-
         key = [f"segment {segment_num + 1}"]
+
         for val in key:
             self.PW_signal_segment.removeItem(self.signal_dataItems[val])
             del self.signal_dataItems[val]
@@ -1227,8 +1231,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_difference_segment.removeItem(self.difference_dataItems[val])
             del self.difference_dataItems[val]
 
-        # for i in range(len(self.segments)):
-        print(self.max_val)
         self.signal_dataItems[f"segment {segment_num + 1}"] = pg.PlotDataItem(
             [self.segments[segment_num]] * 2, [0, self.max_val[0]], pen=segment_pen)
 
@@ -1276,6 +1278,10 @@ class MainWindow(QtWidgets.QMainWindow):
                                              "⌜ Vp ⌝          ⌜ Va ⌝\n"
                                              "|  Vn  | = Sₜ⁻¹ | Vb   |\n"
                                              "⌞ V0 ⌟          ⌞ Vc ⌟\n")
+        self.TT_add_segments.setToolTip("Add segments at some time instance. (Comma separated)\n"
+                                        "Eg: 0.1, 0.3, 0.7")
+        self.TT_remove_segments.setToolTip("Remove any redundant/wrong segment based on the segment number. (Comma separated)\n"
+                                           "Eg: 1, 3, 4")
 
 
 class DeselectableTreeView(
