@@ -988,7 +988,7 @@ class MainWindow(QtWidgets.QMainWindow):
         threshold_pen = pg.mkPen(color=(0, 94, 255),
                                  width=1.5)  # Setting color of threshold signal (horizontal line) in RGB values, can be changed to any other desired color
 
-        self.super_q = {}
+        self.super_q = {}  # Creating an empty dictionary to store "index" of segments and later will be merging all the timestamps to 1 variable
 
         for file in self.file_names:
             pen = pg.mkPen(color=self.files_data_dict[file]['plot_color'], width=1.5)
@@ -1073,6 +1073,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.PW_signal_segment.addLegend(offset=(350, 8))
         self.PW_difference_segment.addLegend(offset=(350, 8))
 
+        # Adding the segments dataItem to the dictionary, so that plotting/adding/deleting the segments will be easy later on
         if self.segments is not None:
             for i in range(len(self.segments)):
                 self.signal_dataItems[f"segment {i + 1}"] = pg.PlotDataItem([self.segments[i]] * 3,
@@ -1082,8 +1083,10 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                                 [0, 0, self.max_val[1]],
                                                                                 pen=segment_pen)
             self.ComB_segment_selection.clear()
+            # Updating the combobox
             self.ComB_segment_selection.addItems([""] + [str(val + 1) for val in range(len(self.segments))])
 
+        # Plotting all the signals by looping over the dictionary
         for key in self.signal_dataItems.keys():
             self.PW_signal_segment.addItem(self.signal_dataItems[key])
             self.PW_difference_segment.addItem(self.difference_dataItems[key])
@@ -1102,36 +1105,38 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.CB_segment_frequency.isChecked():
             self.calculate_manual_segmentation("Frequency F_avg")
 
-    def merge_segments(self):  #
+    def merge_segments(self):
+        """
+        Method were we collect all the required segments to 1 variable
+        """
         self.segments = None
         self.ComB_segment_selection.clear()
 
-        left = []
-        right = []
+        segment_time_stamps = []
 
         for file in self.super_q.keys():
             if len(self.super_q[file]) == 0:
                 continue
             else:
                 for segment_indices in (self.super_q[file]):
-                    left.append(
+                    segment_time_stamps.append(
                         self.files_data_dict[file]['data']['Time'][segment_indices[0]] +
                         self.files_data_dict[file]['shift_values'][
-                            'x'])
-                    right.append(
+                            'x'])  # Appending the starting value
+                    segment_time_stamps.append(
                         self.files_data_dict[file]['data']['Time'][segment_indices[-1]] +
                         self.files_data_dict[file]['shift_values'][
-                            'x'])
+                            'x'])  # Appending the ending value
 
-        if (len(left) == 0) or (len(right) == 0):
+        if len(segment_time_stamps) == 0:
             return
 
-        self.segments = sorted(left + right)
+        self.segments = sorted(segment_time_stamps)
 
         output_list = []
         prev_value = None
         for value in self.segments:
-            if prev_value is None or abs(value - prev_value) >= 0.02:
+            if prev_value is None or abs(value - prev_value) >= 0.02:  # Removing the segments which are too close to each other (redundant segments)
                 output_list.append(value)
                 prev_value = value
 
@@ -1145,12 +1150,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         max_dur = 0
         max_file = None
+        # Searching the file with max length (All the segments will be plotted wrt this file's signals)
         for file in self.file_names:
             max_time = max(self.files_data_dict[file]['data']['Time'])
             if max_time > max_dur:
                 max_dur = max_time
                 max_file = file
 
+        # Rounding the "Time" signal so that when adding new segments we can search for the index corresponding to that timestamp
         time_rounded = list(np.around(
             np.array(
                 self.files_data_dict[max_file]['data']["Time"] + self.files_data_dict[max_file]['shift_values']['x']),
@@ -1159,6 +1166,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.segments is None:
             self.segments = []
 
+        # Appending the newly added values to the "self.segments" variables which stores all the segment timestamps.
         for time_value in segments_to_add:
             try:
                 self.segments.append(self.files_data_dict[max_file]['data']["Time"][time_rounded.index(time_value)])
@@ -1168,15 +1176,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.segments = sorted(list(set(self.segments)))
         keys = [val for val in self.signal_dataItems.keys() if val.startswith("segment")]
-        print(keys)
+
+        # Removing the previous segments (Otherwise the naming will clash)
         for val in keys:
-            print(val)
             self.PW_signal_segment.removeItem(self.signal_dataItems[val])
             del self.signal_dataItems[val]
 
             self.PW_difference_segment.removeItem(self.difference_dataItems[val])
             del self.difference_dataItems[val]
 
+        # Plotting all the signals again
         self.plot_segmentation()
 
     def delete_segments(self):
@@ -1184,14 +1193,17 @@ class MainWindow(QtWidgets.QMainWindow):
         if type(segments_remove) in [float, int, numpy.int32]:
             segments_remove = [segments_remove]
 
+        # Storing all the segments to remove to a list so that we can remove them by looping over them
         keys = []
         for i in segments_remove:
             keys.append(f"segment {i + 1}")
             self.segments[i] = None
             self.ComB_segment_selection.removeItem(self.ComB_segment_selection.findText(str(i)))
 
+        # Updating the timestamp list
         self.segments = [val for val in self.segments if val is not None]
 
+        # Removing the desired segments
         for val in keys:
             self.PW_signal_segment.removeItem(self.signal_dataItems[val])
             del self.signal_dataItems[val]
@@ -1199,6 +1211,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.PW_difference_segment.removeItem(self.difference_dataItems[val])
             del self.difference_dataItems[val]
 
+        # Renaming all the segments to avoid any type of bug
         key = [v for v in self.signal_dataItems.keys() if v.startswith("segment")]
         for v, new_key in zip(list(key), list(range(len(self.segments)))):
             self.signal_dataItems[f"segment {new_key + 1}"] = self.signal_dataItems.pop(v)
@@ -1208,6 +1221,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ComB_segment_selection.addItems([""] + [str(val + 1) for val in range(len(self.segments))])
 
     def shift_segment(self, direction=1):
+        """
+        Similar to move_horizontal, please refer that if any doubt
+        """
         if self.LE_segment_shift_value.text() == "":
             QtWidgets.QMessageBox.information(self,
                                               "Error",
@@ -1222,24 +1238,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def plot_shifted_segments(self, segment_num):
         segment_pen = pg.mkPen(color=(255, 255, 0), width=1.5)
-        key = [f"segment {segment_num + 1}"]
+        key = f"segment {segment_num + 1}"
 
-        for val in key:
-            self.PW_signal_segment.removeItem(self.signal_dataItems[val])
-            del self.signal_dataItems[val]
+        # Removing the old segments plotItems
+        self.PW_signal_segment.removeItem(self.signal_dataItems[key])
+        self.PW_difference_segment.removeItem(self.difference_dataItems[key])
 
-            self.PW_difference_segment.removeItem(self.difference_dataItems[val])
-            del self.difference_dataItems[val]
-
-        self.signal_dataItems[f"segment {segment_num + 1}"] = pg.PlotDataItem(
+        # Adding the new timed segments
+        self.signal_dataItems[key] = pg.PlotDataItem(
             [self.segments[segment_num]] * 2, [0, self.max_val[0]], pen=segment_pen)
 
-        self.difference_dataItems[f"segment {segment_num + 1}"] = pg.PlotDataItem(
+        self.difference_dataItems[key] = pg.PlotDataItem(
             [self.segments[segment_num]] * 2, [0, self.max_val[1]], pen=segment_pen)
 
-        for val in key:
-            self.PW_signal_segment.addItem(self.signal_dataItems[val])
-            self.PW_difference_segment.addItem(self.difference_dataItems[val])
+        # Adding the new plot
+        self.PW_signal_segment.addItem(self.signal_dataItems[key])
+        self.PW_difference_segment.addItem(self.difference_dataItems[key])
 
     #################################################################################################
     #  Helper/General functions
